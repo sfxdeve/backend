@@ -13,10 +13,7 @@ export async function getMyScore(
 ): Promise<void> {
   try {
     const tournamentId = getParam(req, "tournamentId");
-    await tournamentService.getTournament(
-      tournamentId,
-      getAccessContext(req),
-    );
+    await tournamentService.getTournament(tournamentId, getAccessContext(req));
     const userId = req.auth!.userId;
     const result = await computeUserTournamentScore(userId, tournamentId);
     res.json(result);
@@ -32,10 +29,7 @@ export async function getTournamentPlayerScores(
 ): Promise<void> {
   try {
     const tournamentId = getParam(req, "tournamentId");
-    await tournamentService.getTournament(
-      tournamentId,
-      getAccessContext(req),
-    );
+    await tournamentService.getTournament(tournamentId, getAccessContext(req));
     const scores = await getTournamentPlayerScoresService(tournamentId);
     res.json(scores);
   } catch (err) {

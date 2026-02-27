@@ -10,10 +10,7 @@ export async function getMyLineup(
 ): Promise<void> {
   try {
     const tournamentId = getParam(req, "tournamentId");
-    await tournamentService.getTournament(
-      tournamentId,
-      getAccessContext(req),
-    );
+    await tournamentService.getTournament(tournamentId, getAccessContext(req));
     const lineup = await lineupService.getMyLineup(
       req.auth!.userId,
       tournamentId,
@@ -31,10 +28,7 @@ export async function saveLineup(
 ): Promise<void> {
   try {
     const tournamentId = getParam(req, "tournamentId");
-    await tournamentService.getTournament(
-      tournamentId,
-      getAccessContext(req),
-    );
+    await tournamentService.getTournament(tournamentId, getAccessContext(req));
     const lineup = await lineupService.saveLineup(
       req.auth!.userId,
       tournamentId,

@@ -10,10 +10,7 @@ export async function getBracket(
 ): Promise<void> {
   try {
     const { tournamentId } = req.query as { tournamentId: string };
-    await tournamentService.getTournament(
-      tournamentId,
-      getAccessContext(req),
-    );
+    await tournamentService.getTournament(tournamentId, getAccessContext(req));
     const result = await bracketService.getBracket(tournamentId);
     res.json(result);
   } catch (err) {

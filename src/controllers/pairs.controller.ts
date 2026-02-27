@@ -10,10 +10,7 @@ export async function listPairs(
 ): Promise<void> {
   try {
     const { tournamentId } = req.query as { tournamentId: string };
-    await tournamentService.getTournament(
-      tournamentId,
-      getAccessContext(req),
-    );
+    await tournamentService.getTournament(tournamentId, getAccessContext(req));
     const pairs = await pairService.listPairs(tournamentId);
     res.json(pairs);
   } catch (err) {

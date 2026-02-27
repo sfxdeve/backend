@@ -10,10 +10,7 @@ export async function getMyTeam(
 ): Promise<void> {
   try {
     const tournamentId = getParam(req, "tournamentId");
-    await tournamentService.getTournament(
-      tournamentId,
-      getAccessContext(req),
-    );
+    await tournamentService.getTournament(tournamentId, getAccessContext(req));
     const team = await teamService.getMyTeam(req.auth!.userId, tournamentId);
     res.json(team);
   } catch (err) {
@@ -28,10 +25,7 @@ export async function saveTeam(
 ): Promise<void> {
   try {
     const tournamentId = getParam(req, "tournamentId");
-    await tournamentService.getTournament(
-      tournamentId,
-      getAccessContext(req),
-    );
+    await tournamentService.getTournament(tournamentId, getAccessContext(req));
     const team = await teamService.saveTeam(
       req.auth!.userId,
       tournamentId,

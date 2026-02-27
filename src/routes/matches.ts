@@ -1,5 +1,9 @@
 import { Router } from "express";
-import { authenticate, optionalAuth, requireAdmin } from "../middlewares/auth.js";
+import {
+  authenticate,
+  optionalAuth,
+  requireAdmin,
+} from "../middlewares/auth.js";
 import { validateRequest } from "../middlewares/validate-request.js";
 import * as v from "../validators/matches.validators.js";
 import * as ctrl from "../controllers/matches.controller.js";

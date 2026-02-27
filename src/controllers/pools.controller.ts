@@ -10,10 +10,7 @@ export async function listPools(
 ): Promise<void> {
   try {
     const { tournamentId } = req.query as { tournamentId: string };
-    await tournamentService.getTournament(
-      tournamentId,
-      getAccessContext(req),
-    );
+    await tournamentService.getTournament(tournamentId, getAccessContext(req));
     const pools = await poolService.listPools(tournamentId);
     res.json(pools);
   } catch (err) {
