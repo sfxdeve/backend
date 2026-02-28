@@ -24,7 +24,7 @@ export const createTournamentBody = z.object({
   endDate: z.coerce.date(),
   lineupLockAt: z.coerce.date(),
   rosterSize: z.number().int().min(4).max(30).optional(),
-  officialUrl: z.string().url().optional().or(z.literal("")),
+  officialUrl: z.url().optional().or(z.literal("")),
   scoringTable: scoringTableSchema,
 });
 

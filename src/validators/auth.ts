@@ -1,13 +1,13 @@
 import { z } from "zod";
 
 export const registerBody = z.object({
-  email: z.string().email(),
+  email: z.email(),
   name: z.string().min(1),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
 export const loginBody = z.object({
-  email: z.string().email(),
+  email: z.email(),
   password: z.string().min(1),
 });
 
@@ -21,7 +21,7 @@ export const verifyEmailBody = z.object({
 });
 
 export const forgotPasswordBody = z.object({
-  email: z.string().email(),
+  email: z.email(),
 });
 
 export const resetPasswordBody = z.object({
