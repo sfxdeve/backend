@@ -17,12 +17,7 @@ import {
   validateSession,
 } from "../lib/session.js";
 import { OtpPurpose } from "../models/enums.js";
-
-export interface RegisterBody {
-  email: string;
-  name: string;
-  password: string;
-}
+import type { RegisterBody } from "../validators/auth.js";
 
 export async function register(
   body: RegisterBody,

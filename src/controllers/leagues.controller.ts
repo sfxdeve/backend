@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { param } from "../lib/params.js";
 import * as leaguesService from "../services/leagues.service.js";
-import type { JoinLeagueBody, ListLeaguesQuery } from "../validators/leagues.js";
+import type { CreateLeagueBody, JoinLeagueBody, UpdateLeagueBody, ListLeaguesQuery } from "../validators/leagues.js";
 
 export async function list(
   req: Request,
@@ -9,7 +9,7 @@ export async function list(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const result = await leaguesService.listPublic(req.query as unknown as ListLeaguesQuery);
+    const result = await leaguesService.list(req.query as unknown as ListLeaguesQuery);
     res.json(result);
   } catch (e) {
     next(e);
@@ -49,7 +49,7 @@ export async function create(
 ): Promise<void> {
   try {
     const userId = req.auth!.userId;
-    const result = await leaguesService.create(userId, req.body);
+    const result = await leaguesService.create(userId, req.body as CreateLeagueBody);
     res.status(201).json(result);
   } catch (e) {
     next(e);
@@ -79,7 +79,7 @@ export async function update(
   try {
     const userId = req.auth!.userId;
     const isAdmin = req.auth!.role === "ADMIN";
-    await leaguesService.update(param(req, "id"), userId, isAdmin, req.body);
+    await leaguesService.update(param(req, "id"), userId, isAdmin, req.body as UpdateLeagueBody);
     res.status(204).send();
   } catch (e) {
     next(e);

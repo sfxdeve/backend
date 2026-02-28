@@ -1,11 +1,7 @@
 import { Match } from "../models/Match.js";
 import { Pair } from "../models/Pair.js";
 import { AppError } from "../lib/errors.js";
-
-export interface CreatePairBody {
-  player1Id: string;
-  player2Id: string;
-}
+import type { CreatePairBody } from "../validators/pairs.js";
 
 export async function create(tournamentId: string, body: CreatePairBody) {
   const pair = await Pair.create({
@@ -16,7 +12,7 @@ export async function create(tournamentId: string, body: CreatePairBody) {
   return pair.populate(["player1Id", "player2Id"]).then((p) => p.toObject());
 }
 
-export async function deletePair(pairId: string): Promise<void> {
+export async function remove(pairId: string): Promise<void> {
   const played = await Match.exists({
     $or: [{ homePairId: pairId }, { awayPairId: pairId }],
     isCompleted: true,

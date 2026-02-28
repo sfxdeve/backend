@@ -1,13 +1,5 @@
 import mongoose from "mongoose";
-
-export const NotificationType = {
-  LINEUP_LOCKED: "LINEUP_LOCKED",
-  MATCH_RESULT: "MATCH_RESULT",
-  STANDINGS_UPDATE: "STANDINGS_UPDATE",
-  TOURNAMENT_FINALIZED: "TOURNAMENT_FINALIZED",
-} as const;
-export type NotificationType =
-  (typeof NotificationType)[keyof typeof NotificationType];
+import { NotificationType } from "./enums.js";
 
 const notificationSchema = new mongoose.Schema(
   {

@@ -4,7 +4,7 @@ import { LeagueMember } from "../models/LeagueMember.js";
 import { Lineup } from "../models/Lineup.js";
 import { AppError } from "../lib/errors.js";
 import { paginationOptions, paginationMeta } from "../lib/pagination.js";
-import type { PaginationQuery } from "../lib/pagination.js";
+import type { ListLeaguesQuery, CreateLeagueBody, UpdateLeagueBody } from "../validators/leagues.js";
 import {
   CreditTransactionSource,
   LeagueGameMode,
@@ -12,13 +12,7 @@ import {
 } from "../models/enums.js";
 import * as walletService from "./wallet.service.js";
 
-export interface ListLeaguesQuery extends PaginationQuery {
-  tournamentId?: string;
-  isPublic?: boolean;
-  status?: string;
-}
-
-export async function listPublic(query: ListLeaguesQuery) {
+export async function list(query: ListLeaguesQuery) {
   const filter: Record<string, unknown> = { isPublic: true };
   if (query.tournamentId) filter.tournamentId = query.tournamentId;
   if (query.status) filter.status = query.status;
@@ -41,15 +35,6 @@ export async function getById(id: string) {
     .lean();
   if (!league) throw new AppError("NOT_FOUND", "League not found");
   return league;
-}
-
-export interface CreateLeagueBody {
-  tournamentId: string;
-  name: string;
-  isPublic: boolean;
-  gameMode?: LeagueGameMode;
-  entryFee?: number;
-  maxMembers?: number;
 }
 
 export async function create(userId: string, body: CreateLeagueBody) {
@@ -114,12 +99,6 @@ export async function getStandings(leagueId: string) {
     .sort({ totalPoints: -1 })
     .populate("userId", "name email")
     .lean();
-}
-
-export interface UpdateLeagueBody {
-  name?: string;
-  isPublic?: boolean;
-  maxMembers?: number;
 }
 
 export async function update(

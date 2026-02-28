@@ -33,6 +33,7 @@ import pairsRoutes from "./routes/pairs.js";
 import poolsRoutes from "./routes/pools.js";
 import scoringRoutes from "./routes/scoring.js";
 import seasonsRoutes from "./routes/seasons.js";
+import notificationsRoutes from "./routes/notifications.js";
 import teamsRoutes from "./routes/teams.js";
 import tournamentsRoutes from "./routes/tournaments.js";
 import usersRoutes from "./routes/users.js";
@@ -122,6 +123,7 @@ export async function bootstrap(): Promise<{
   app.use("/api/tournaments/:tournamentId/team", teamsRoutes);
   app.use("/api/tournaments/:tournamentId/lineup", lineupsRoutes);
   app.use("/api/tournaments", tournamentsRoutes);
+  app.use("/api/users/notifications", notificationsRoutes);
   app.use("/api/users", usersRoutes);
   app.use("/api/wallet", walletRoutes);
 

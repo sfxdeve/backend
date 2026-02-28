@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { paginationSchema } from "../lib/pagination.js";
-import { AuditLogType } from "../models/AuditLog.js";
+import { AuditLogType } from "../models/enums.js";
 
 export const priceParamsBody = z.object({
   tournamentId: z.string().min(1),

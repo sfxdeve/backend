@@ -1,8 +1,6 @@
 import { z } from "zod";
 import { paginationSchema } from "../lib/pagination.js";
 
-export const listNotificationsQuery = paginationSchema;
-
 export const updateProfileBody = z.object({
   name: z.string().min(1).optional(),
 });
@@ -17,10 +15,6 @@ export const blockUserBody = z.object({
 });
 
 export const userIdParam = z.object({
-  id: z.string().min(1),
-});
-
-export const notificationIdParam = z.object({
   id: z.string().min(1),
 });
 
@@ -39,9 +33,9 @@ export const auditLogQuery = paginationSchema.merge(
   }),
 );
 
-export type ListNotificationsQuery = z.infer<typeof listNotificationsQuery>;
 export type UpdateProfileBody = z.infer<typeof updateProfileBody>;
 export type ChangePasswordBody = z.infer<typeof changePasswordBody>;
 export type BlockUserBody = z.infer<typeof blockUserBody>;
+export type UserIdParam = z.infer<typeof userIdParam>;
 export type ListUsersQuery = z.infer<typeof listUsersQuery>;
 export type AuditLogQuery = z.infer<typeof auditLogQuery>;

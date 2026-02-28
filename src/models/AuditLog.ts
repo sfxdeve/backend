@@ -1,13 +1,5 @@
 import mongoose from "mongoose";
-
-export const AuditLogType = {
-  MATCH_SCORE_UPDATE: "MATCH_SCORE_UPDATE",
-  MATCH_CORRECTED: "MATCH_CORRECTED",
-  RECOMPUTE_RUN: "RECOMPUTE_RUN",
-  LINEUP_LOCKED: "LINEUP_LOCKED",
-  ADMIN_ACTION: "ADMIN_ACTION",
-} as const;
-export type AuditLogType = (typeof AuditLogType)[keyof typeof AuditLogType];
+import { AuditLogType } from "./enums.js";
 
 const auditLogSchema = new mongoose.Schema(
   {

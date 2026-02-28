@@ -1,15 +1,12 @@
 import { Router } from "express";
 import { validateRequest } from "../middlewares/validate-request.js";
 import { requireAuth, requireAdmin } from "../middlewares/auth.js";
-import * as notificationsController from "../controllers/notifications.controller.js";
 import * as usersController from "../controllers/users.controller.js";
 import {
   auditLogQuery,
   blockUserBody,
   changePasswordBody,
-  listNotificationsQuery,
   listUsersQuery,
-  notificationIdParam,
   updateProfileBody,
   userIdParam,
 } from "../validators/users.js";
@@ -46,20 +43,6 @@ router.put(
   requireAdmin,
   validateRequest({ params: userIdParam, body: blockUserBody }),
   usersController.blockUser,
-);
-
-// Notification routes
-router.get(
-  "/notifications",
-  requireAuth,
-  validateRequest({ query: listNotificationsQuery }),
-  notificationsController.list,
-);
-router.put(
-  "/notifications/:id/read",
-  requireAuth,
-  validateRequest({ params: notificationIdParam }),
-  notificationsController.markRead,
 );
 
 export default router;

@@ -99,3 +99,21 @@ export const CreditTransactionSource = {
 } as const;
 export type CreditTransactionSource =
   (typeof CreditTransactionSource)[keyof typeof CreditTransactionSource];
+
+export const AuditLogType = {
+  MATCH_SCORE_UPDATE: "MATCH_SCORE_UPDATE",
+  MATCH_CORRECTED: "MATCH_CORRECTED",
+  RECOMPUTE_RUN: "RECOMPUTE_RUN",
+  LINEUP_LOCKED: "LINEUP_LOCKED",
+  ADMIN_ACTION: "ADMIN_ACTION",
+} as const;
+export type AuditLogType = (typeof AuditLogType)[keyof typeof AuditLogType];
+
+export const NotificationType = {
+  LINEUP_LOCKED: "LINEUP_LOCKED",
+  MATCH_RESULT: "MATCH_RESULT",
+  STANDINGS_UPDATE: "STANDINGS_UPDATE",
+  TOURNAMENT_FINALIZED: "TOURNAMENT_FINALIZED",
+} as const;
+export type NotificationType =
+  (typeof NotificationType)[keyof typeof NotificationType];

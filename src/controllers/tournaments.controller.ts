@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { param } from "../lib/params.js";
 import * as tournamentsService from "../services/tournaments.service.js";
-import type { ListTournamentsQuery } from "../validators/tournaments.js";
+import type { CreateTournamentBody, UpdateTournamentBody, ListTournamentsQuery } from "../validators/tournaments.js";
 
 export async function list(
   req: Request,
@@ -48,7 +48,7 @@ export async function create(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const result = await tournamentsService.create(req.body);
+    const result = await tournamentsService.create(req.body as CreateTournamentBody);
     res.status(201).json(result);
   } catch (e) {
     next(e);
@@ -61,7 +61,7 @@ export async function update(
   next: NextFunction,
 ): Promise<void> {
   try {
-    await tournamentsService.update(param(req, "id"), req.body);
+    await tournamentsService.update(param(req, "id"), req.body as UpdateTournamentBody);
     res.status(204).send();
   } catch (e) {
     next(e);

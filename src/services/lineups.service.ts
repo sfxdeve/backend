@@ -4,6 +4,7 @@ import { Team } from "../models/Team.js";
 import { AppError } from "../lib/errors.js";
 import { appEmitter } from "../events/emitter.js";
 import { LineupStatus } from "../models/enums.js";
+import type { SetLineupBody } from "../validators/lineups.js";
 
 export async function getLineup(userId: string, tournamentId: string) {
   const lineup = await Lineup.findOne({ userId, tournamentId })
@@ -11,11 +12,6 @@ export async function getLineup(userId: string, tournamentId: string) {
     .populate("reserves")
     .lean();
   return lineup ?? null;
-}
-
-export interface SetLineupBody {
-  starters: string[];
-  reserves: string[];
 }
 
 export async function setLineup(

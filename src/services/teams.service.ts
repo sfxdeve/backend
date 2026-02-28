@@ -5,16 +5,13 @@ import { Tournament } from "../models/Tournament.js";
 import { AppError } from "../lib/errors.js";
 import { CreditTransactionSource } from "../models/enums.js";
 import * as walletService from "./wallet.service.js";
+import type { SetTeamBody } from "../validators/teams.js";
 
 export async function getTeam(userId: string, tournamentId: string) {
   const team = await Team.findOne({ userId, tournamentId })
     .populate("playerIds")
     .lean();
   return team ?? null;
-}
-
-export interface SetTeamBody {
-  playerIds: string[];
 }
 
 export async function createOrUpdate(

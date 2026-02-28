@@ -13,7 +13,7 @@ export async function list(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { tournamentId } = req.query as TournamentIdQuery;
+    const { tournamentId } = req.query as unknown as TournamentIdQuery;
     const result = await poolsService.listGroups(tournamentId);
     res.json(result);
   } catch (e) {
@@ -27,7 +27,7 @@ export async function createGroup(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { tournamentId } = req.query as TournamentIdQuery;
+    const { tournamentId } = req.query as unknown as TournamentIdQuery;
     const result = await poolsService.createGroup(tournamentId, req.body as CreateGroupBody);
     res.status(201).json(result);
   } catch (e) {

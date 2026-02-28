@@ -9,7 +9,7 @@ export async function getPlayerScores(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { tournamentId, playerId } = req.query as PlayerScoresQuery;
+    const { tournamentId, playerId } = req.query as unknown as PlayerScoresQuery;
     const result = await scoringService.getPlayerScores(tournamentId, playerId);
     res.json(result);
   } catch (e) {

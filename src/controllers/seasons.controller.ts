@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { param } from "../lib/params.js";
 import * as seasonsService from "../services/seasons.service.js";
-import type { ListSeasonsQuery } from "../services/seasons.service.js";
+import type { ListSeasonsQuery } from "../validators/seasons.js";
 
 export async function list(
   req: Request,

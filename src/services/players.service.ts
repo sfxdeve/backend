@@ -3,15 +3,12 @@ import { Player } from "../models/Player.js";
 import { Tournament } from "../models/Tournament.js";
 import { AppError } from "../lib/errors.js";
 import { paginationOptions, paginationMeta } from "../lib/pagination.js";
-import type { PaginationQuery } from "../lib/pagination.js";
-import { Gender } from "../models/enums.js";
-
-export interface ListPlayersQuery extends PaginationQuery {
-  gender?: string;
-  search?: string;
-  tournamentId?: string;
-  seasonId?: string;
-}
+import type {
+  CreatePlayerBody,
+  UpdatePlayerBody,
+  AdjustPriceBody,
+  ListPlayersQuery,
+} from "../validators/players.js";
 
 export async function list(query: ListPlayersQuery) {
   const filter: Record<string, unknown> = {};
@@ -60,14 +57,6 @@ export async function getById(id: string) {
   return player;
 }
 
-export interface CreatePlayerBody {
-  firstName: string;
-  lastName: string;
-  gender: Gender;
-  nationality?: string;
-  federationId?: string;
-}
-
 export async function create(body: CreatePlayerBody) {
   const player = await Player.create({
     firstName: body.firstName,
@@ -79,17 +68,11 @@ export async function create(body: CreatePlayerBody) {
   return player.toObject();
 }
 
-export async function update(
-  id: string,
-  body: Partial<CreatePlayerBody>,
-): Promise<void> {
+export async function update(id: string, body: UpdatePlayerBody): Promise<void> {
   await Player.updateOne({ _id: id }, { $set: body });
 }
 
-export async function adjustPrice(
-  id: string,
-  body: { currentPrice: number },
-): Promise<void> {
+export async function adjustPrice(id: string, body: AdjustPriceBody): Promise<void> {
   await Player.updateOne(
     { _id: id },
     { $set: { currentPrice: body.currentPrice } },

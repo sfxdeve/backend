@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { Match } from "../models/Match.js";
 import { PoolGroup } from "../models/PoolGroup.js";
 import { AppError } from "../lib/errors.js";
-import { Gender } from "../models/enums.js";
+import type { CreateGroupBody } from "../validators/pools.js";
 
 export async function listGroups(tournamentId: string) {
   const groups = await PoolGroup.find({ tournamentId }).lean();
@@ -16,11 +16,6 @@ export async function listGroups(tournamentId: string) {
     }),
   );
   return withMatches;
-}
-
-export interface CreateGroupBody {
-  name: string;
-  gender: Gender;
 }
 
 export async function createGroup(tournamentId: string, body: CreateGroupBody) {

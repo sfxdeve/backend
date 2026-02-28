@@ -55,7 +55,7 @@ export async function listUsers(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const result = await usersService.listUsers(req.query as unknown as ListUsersQuery);
+    const result = await usersService.list(req.query as unknown as ListUsersQuery);
     res.json(result);
   } catch (e) {
     next(e);

@@ -9,7 +9,7 @@ export async function list(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { tournamentId } = req.query as TournamentIdQuery;
+    const { tournamentId } = req.query as unknown as TournamentIdQuery;
     const result = await pairsService.listForTournament(tournamentId);
     res.json(result);
   } catch (e) {
@@ -23,7 +23,7 @@ export async function create(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { tournamentId } = req.query as TournamentIdQuery;
+    const { tournamentId } = req.query as unknown as TournamentIdQuery;
     const result = await pairsService.create(tournamentId, req.body as CreatePairBody);
     res.status(201).json(result);
   } catch (e) {
@@ -37,7 +37,7 @@ export async function deletePair(
   next: NextFunction,
 ): Promise<void> {
   try {
-    await pairsService.deletePair(param(req, "id"));
+    await pairsService.remove(param(req, "id"));
     res.status(204).send();
   } catch (e) {
     next(e);

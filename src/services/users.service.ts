@@ -3,8 +3,8 @@ import { User } from "../models/User.js";
 import { AppError } from "../lib/errors.js";
 import { compareSecret, hashSecret } from "../lib/hash.js";
 import { paginationOptions, paginationMeta } from "../lib/pagination.js";
-import type { PaginationQuery } from "../lib/pagination.js";
 import { revokeAllUserSessions } from "../lib/session.js";
+import type { UpdateProfileBody, ChangePasswordBody, ListUsersQuery, AuditLogQuery } from "../validators/users.js";
 
 export async function getProfile(userId: string) {
   const user = await User.findById(userId).select("-passwordHash").lean();
@@ -14,7 +14,7 @@ export async function getProfile(userId: string) {
 
 export async function updateProfile(
   userId: string,
-  body: { name?: string },
+  body: UpdateProfileBody,
 ): Promise<void> {
   const update: Record<string, string> = {};
   if (body.name != null) update.name = body.name;
@@ -24,7 +24,7 @@ export async function updateProfile(
 
 export async function changePassword(
   userId: string,
-  body: { oldPassword: string; newPassword: string },
+  body: ChangePasswordBody,
 ): Promise<void> {
   const user = await User.findById(userId);
   if (!user) throw new AppError("NOT_FOUND", "User not found");
@@ -35,7 +35,7 @@ export async function changePassword(
   await revokeAllUserSessions(userId.toString());
 }
 
-export async function listUsers(query: PaginationQuery & { search?: string }) {
+export async function list(query: ListUsersQuery) {
   const filter: Record<string, unknown> = {};
   if (query.search) {
     filter.$or = [
@@ -57,13 +57,6 @@ export async function listUsers(query: PaginationQuery & { search?: string }) {
 
 export async function blockUser(id: string, blocked: boolean): Promise<void> {
   await User.updateOne({ _id: id }, { $set: { isBlocked: blocked } });
-}
-
-export interface AuditLogQuery extends PaginationQuery {
-  type?: string;
-  tournamentId?: string;
-  from?: Date;
-  to?: Date;
 }
 
 export async function getAuditLog(query: AuditLogQuery) {

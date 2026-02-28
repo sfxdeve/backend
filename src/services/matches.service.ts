@@ -1,18 +1,14 @@
 import crypto from "node:crypto";
 import mongoose from "mongoose";
-import { AuditLog, AuditLogType } from "../models/AuditLog.js";
+import { AuditLog } from "../models/AuditLog.js";
+import { AuditLogType } from "../models/enums.js";
 import { Match } from "../models/Match.js";
 import { Tournament } from "../models/Tournament.js";
 import { AppError } from "../lib/errors.js";
 import { paginationOptions, paginationMeta } from "../lib/pagination.js";
-import type { PaginationQuery } from "../lib/pagination.js";
 import { appEmitter } from "../events/emitter.js";
-import {
-  MatchPhase,
-  MatchResult,
-  MatchStatus,
-  TournamentStatus,
-} from "../models/enums.js";
+import type { ListMatchesQuery, CreateMatchBody, UpdateScoreBody } from "../validators/matches.js";
+import { MatchStatus, TournamentStatus } from "../models/enums.js";
 
 export function computeMatchId(
   tournamentId: string,
@@ -23,12 +19,6 @@ export function computeMatchId(
   const slot = bracketSlot ?? "";
   const input = `${tournamentId}${phase}${slot}${scheduledAt.toISOString()}`;
   return crypto.createHash("sha256").update(input).digest("hex");
-}
-
-export interface ListMatchesQuery extends PaginationQuery {
-  tournamentId: string;
-  phase?: string;
-  status?: string;
 }
 
 export async function listForTournament(
@@ -62,15 +52,6 @@ export async function getById(id: string) {
   return match;
 }
 
-export interface CreateMatchBody {
-  tournamentId: string;
-  phase: MatchPhase;
-  scheduledAt: Date;
-  bracketSlot?: string;
-  poolGroupId?: string;
-  poolRound?: string;
-}
-
 export async function create(body: CreateMatchBody) {
   const matchId = computeMatchId(
     body.tournamentId,
@@ -91,15 +72,10 @@ export async function create(body: CreateMatchBody) {
     matchId,
     poolGroupId: body.poolGroupId,
     poolRound: body.poolRound,
-    bracketSlot: body.bracketSlot,
+    bracketSlot: body.bracketSlot != null ? String(body.bracketSlot) : undefined,
     scheduledAt: body.scheduledAt,
   });
   return match.toObject();
-}
-
-export interface UpdateScoreBody {
-  sets: Array<{ home: number; away: number }>;
-  result: MatchResult;
 }
 
 export async function updateScore(

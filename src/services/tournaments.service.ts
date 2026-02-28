@@ -1,9 +1,9 @@
 import { Tournament } from "../models/Tournament.js";
 import { AppError } from "../lib/errors.js";
 import { paginationOptions, paginationMeta } from "../lib/pagination.js";
-import type { PaginationQuery } from "../lib/pagination.js";
 import { appEmitter } from "../events/emitter.js";
 import type { ScoringTable } from "../scoring/engine.js";
+import type { ListTournamentsQuery, CreateTournamentBody, UpdateTournamentBody } from "../validators/tournaments.js";
 import { TournamentStatus } from "../models/enums.js";
 
 const defaultScoringTable: ScoringTable = {
@@ -17,12 +17,6 @@ const defaultScoringTable: ScoringTable = {
   bonusWin2_0: 2,
   bonusWin2_1: 1,
 };
-
-export interface ListTournamentsQuery extends PaginationQuery {
-  seasonId?: string;
-  gender?: string;
-  status?: string;
-}
 
 export async function list(query: ListTournamentsQuery) {
   const filter: Record<string, unknown> = {};
@@ -53,19 +47,6 @@ export async function getById(id: string) {
   return t;
 }
 
-export interface CreateTournamentBody {
-  seasonId: string;
-  name: string;
-  location: string;
-  gender: string;
-  startDate: Date;
-  endDate: Date;
-  lineupLockAt: Date;
-  rosterSize?: number;
-  officialUrl?: string;
-  scoringTable?: Partial<ScoringTable>;
-}
-
 export async function create(body: CreateTournamentBody) {
   const scoringTable = {
     ...defaultScoringTable,
@@ -89,7 +70,7 @@ export async function create(body: CreateTournamentBody) {
 
 export async function update(
   id: string,
-  body: Partial<CreateTournamentBody>,
+  body: UpdateTournamentBody,
 ): Promise<void> {
   const doc = await Tournament.findById(id);
   if (!doc) throw new AppError("NOT_FOUND", "Tournament not found");

@@ -1,14 +1,11 @@
 import { Season } from "../models/Season.js";
 import { AppError } from "../lib/errors.js";
 import { paginationOptions, paginationMeta } from "../lib/pagination.js";
-import type { PaginationQuery } from "../lib/pagination.js";
-import { Gender } from "../models/enums.js";
-
-export interface ListSeasonsQuery extends PaginationQuery {
-  year?: number;
-  gender?: string;
-  isActive?: boolean;
-}
+import type {
+  CreateSeasonBody,
+  UpdateSeasonBody,
+  ListSeasonsQuery,
+} from "../validators/seasons.js";
 
 export async function list(query: ListSeasonsQuery) {
   const filter: Record<string, unknown> = {};
@@ -33,13 +30,6 @@ export async function getById(id: string) {
   return season;
 }
 
-export interface CreateSeasonBody {
-  name: string;
-  year: number;
-  gender: Gender;
-  isActive?: boolean;
-}
-
 export async function create(body: CreateSeasonBody) {
   const season = await Season.create({
     name: body.name,
@@ -50,10 +40,7 @@ export async function create(body: CreateSeasonBody) {
   return season.toObject();
 }
 
-export async function update(
-  id: string,
-  body: Partial<CreateSeasonBody>,
-): Promise<void> {
+export async function update(id: string, body: UpdateSeasonBody): Promise<void> {
   const doc = await Season.findById(id);
   if (!doc) throw new AppError("NOT_FOUND", "Season not found");
   if (body.name != null) doc.name = body.name;

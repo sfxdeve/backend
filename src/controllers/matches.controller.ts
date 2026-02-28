@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { param } from "../lib/params.js";
 import * as matchesService from "../services/matches.service.js";
-import type { ListMatchesQuery } from "../validators/matches.js";
+import type { CreateMatchBody, UpdateScoreBody, ListMatchesQuery } from "../validators/matches.js";
 
 export async function list(
   req: Request,
@@ -9,10 +9,8 @@ export async function list(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const result = await matchesService.listForTournament(
-      req.query.tournamentId as string,
-      req.query as unknown as ListMatchesQuery,
-    );
+    const query = req.query as unknown as ListMatchesQuery;
+    const result = await matchesService.listForTournament(query.tournamentId, query);
     res.json(result);
   } catch (e) {
     next(e);
@@ -38,7 +36,7 @@ export async function create(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const result = await matchesService.create(req.body);
+    const result = await matchesService.create(req.body as CreateMatchBody);
     res.status(201).json(result);
   } catch (e) {
     next(e);
@@ -53,7 +51,7 @@ export async function updateScore(
   try {
     await matchesService.updateScore(
       param(req, "id"),
-      req.body,
+      req.body as UpdateScoreBody,
       req.auth!.userId,
     );
     res.status(204).send();
@@ -81,7 +79,7 @@ export async function complete(
   next: NextFunction,
 ): Promise<void> {
   try {
-    await matchesService.complete(param(req, "id"), req.body);
+    await matchesService.complete(param(req, "id"), req.body as UpdateScoreBody);
     res.status(204).send();
   } catch (e) {
     next(e);

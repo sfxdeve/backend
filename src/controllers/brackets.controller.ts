@@ -9,7 +9,7 @@ export async function getForTournament(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { tournamentId } = req.query as TournamentIdQuery;
+    const { tournamentId } = req.query as unknown as TournamentIdQuery;
     const result = await bracketsService.getForTournament(tournamentId);
     res.json(result);
   } catch (e) {
