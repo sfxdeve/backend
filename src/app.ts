@@ -9,6 +9,7 @@ import helmet from "helmet";
 import cors from "cors";
 import * as pinoHttp from "pino-http";
 import type { IncomingMessage } from "http";
+import "./events/handlers.js";
 import { env } from "./lib/env.js";
 import { logger } from "./lib/logger.js";
 import { connectDb, disconnectDb, isDbConnected } from "./lib/db.js";

@@ -1,0 +1,842 @@
+{
+  "info": {
+    "name": "FantaBeach API",
+    "description": "REST API for FantaBeach backend. Set `baseUrl` and `accessToken` in the environment.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{accessToken}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "accessToken", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health"
+          }
+        },
+        {
+          "name": "Ready",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/ready"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"frontend@example.com\",\n  \"name\": \"Frontend Dev\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/register",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "if (pm.response.code === 201) {",
+                    "    const json = pm.response.json();",
+                    "    if (json.userId) pm.environment.set('userId', json.userId);",
+                    "}"
+                  ],
+                  "type": "text/javascript"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"code\": \"123456\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/verify-email"
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"frontend@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "if (pm.response.code === 200) {",
+                    "    const json = pm.response.json();",
+                    "    if (json.accessToken) pm.environment.set('accessToken', json.accessToken);",
+                    "    if (json.refreshToken) pm.environment.set('refreshToken', json.refreshToken);",
+                    "    if (json.user && json.user.id) pm.environment.set('userId', json.user.id);",
+                    "}"
+                  ],
+                  "type": "text/javascript"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "Refresh",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/refresh"
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/auth/logout"
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"frontend@example.com\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/forgot-password"
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"code\": \"123456\",\n  \"newPassword\": \"newpassword123\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/reset-password"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Seasons",
+      "item": [
+        {
+          "name": "List Seasons",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/seasons?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "seasons"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "year", "value": "2025", "disabled": true },
+                { "key": "gender", "value": "M", "disabled": true },
+                { "key": "isActive", "value": "true", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Season",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/seasons/{{seasonId}}"
+          }
+        },
+        {
+          "name": "Create Season (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"BVB World Tour\",\n  \"year\": 2025,\n  \"gender\": \"M\",\n  \"isActive\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/seasons"
+          }
+        },
+        {
+          "name": "Update Season (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"BVB World Tour Updated\"\n}"
+            },
+            "url": "{{baseUrl}}/api/seasons/{{seasonId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tournaments",
+      "item": [
+        {
+          "name": "List Tournaments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tournaments?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tournaments"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                {
+                  "key": "seasonId",
+                  "value": "{{seasonId}}",
+                  "disabled": true
+                },
+                { "key": "gender", "value": "M", "disabled": true },
+                { "key": "status", "value": "UPCOMING", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Live Tournaments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/tournaments/live"
+          }
+        },
+        {
+          "name": "Get Tournament",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/tournaments/{{tournamentId}}"
+          }
+        },
+        {
+          "name": "Create Tournament (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"seasonId\": \"{{seasonId}}\",\n  \"name\": \"Rome 2025\",\n  \"location\": \"Rome\",\n  \"gender\": \"M\",\n  \"startDate\": \"2025-06-01T00:00:00.000Z\",\n  \"endDate\": \"2025-06-08T00:00:00.000Z\",\n  \"lineupLockAt\": \"2025-05-29T21:59:00.000Z\",\n  \"rosterSize\": 7\n}"
+            },
+            "url": "{{baseUrl}}/api/tournaments"
+          }
+        },
+        {
+          "name": "Update Tournament (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Rome 2025 Updated\"\n}"
+            },
+            "url": "{{baseUrl}}/api/tournaments/{{tournamentId}}"
+          }
+        },
+        {
+          "name": "Finalize Tournament (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/tournaments/{{tournamentId}}/finalize"
+          }
+        },
+        {
+          "name": "Force Lock (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/tournaments/{{tournamentId}}/force-lock"
+          }
+        },
+        {
+          "name": "Recompute (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/tournaments/{{tournamentId}}/recompute"
+          }
+        },
+        {
+          "name": "Generate Bracket (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/tournaments/{{tournamentId}}/bracket/generate"
+          }
+        },
+        {
+          "name": "Update Price Params (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"priceVolatilityFactor\": 1.0,\n  \"priceFloor\": 10,\n  \"priceCap\": 200\n}"
+            },
+            "url": "{{baseUrl}}/api/tournaments/{{tournamentId}}/price-params"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Players",
+      "item": [
+        {
+          "name": "List Players",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/players?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "players"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "gender", "value": "M", "disabled": true },
+                { "key": "search", "value": "", "disabled": true },
+                {
+                  "key": "tournamentId",
+                  "value": "{{tournamentId}}",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Player",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/players/{{playerId}}"
+          }
+        },
+        {
+          "name": "Create Player (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"gender\": \"M\",\n  \"nationality\": \"ITA\"\n}"
+            },
+            "url": "{{baseUrl}}/api/players"
+          }
+        },
+        {
+          "name": "Update Player (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe Jr\"\n}"
+            },
+            "url": "{{baseUrl}}/api/players/{{playerId}}"
+          }
+        },
+        {
+          "name": "Adjust Price (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPrice\": 95\n}"
+            },
+            "url": "{{baseUrl}}/api/players/{{playerId}}/price"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pairs",
+      "item": [
+        {
+          "name": "List Pairs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/pairs?tournamentId={{tournamentId}}"
+          }
+        },
+        {
+          "name": "Create Pair (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"player1Id\": \"{{playerId}}\",\n  \"player2Id\": \"{{playerId2}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/pairs?tournamentId={{tournamentId}}"
+          }
+        },
+        {
+          "name": "Delete Pair (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/pairs/{{pairId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pools",
+      "item": [
+        {
+          "name": "List Pools",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/pools?tournamentId={{tournamentId}}"
+          }
+        },
+        {
+          "name": "Create Pool Group (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Pool A\",\n  \"gender\": \"M\"\n}"
+            },
+            "url": "{{baseUrl}}/api/pools?tournamentId={{tournamentId}}"
+          }
+        },
+        {
+          "name": "Assign Pair to Pool (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pairId\": \"{{pairId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/pools/{{poolGroupId}}/pairs"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Matches",
+      "item": [
+        {
+          "name": "List Matches",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/matches?tournamentId={{tournamentId}}&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "matches"],
+              "query": [
+                { "key": "tournamentId", "value": "{{tournamentId}}" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "phase", "value": "POOL", "disabled": true },
+                { "key": "status", "value": "SCHEDULED", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Match",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/matches/{{matchId}}"
+          }
+        },
+        {
+          "name": "Create Match (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tournamentId\": \"{{tournamentId}}\",\n  \"phase\": \"POOL\",\n  \"scheduledAt\": \"2025-06-01T10:00:00.000Z\",\n  \"bracketSlot\": 1,\n  \"poolGroupId\": \"{{poolGroupId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/matches"
+          }
+        },
+        {
+          "name": "Update Score (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sets\": [ { \"home\": 21, \"away\": 15 }, { \"home\": 21, \"away\": 18 } ],\n  \"result\": \"WIN_2_0\"\n}"
+            },
+            "url": "{{baseUrl}}/api/matches/{{matchId}}/score"
+          }
+        },
+        {
+          "name": "Set Live (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/matches/{{matchId}}/live"
+          }
+        },
+        {
+          "name": "Complete Match (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sets\": [ { \"home\": 21, \"away\": 15 }, { \"home\": 21, \"away\": 18 } ],\n  \"result\": \"WIN_2_0\"\n}"
+            },
+            "url": "{{baseUrl}}/api/matches/{{matchId}}/complete"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Brackets",
+      "item": [
+        {
+          "name": "Get Bracket",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/brackets?tournamentId={{tournamentId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Scoring",
+      "item": [
+        {
+          "name": "Player Scores",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/scoring/players?tournamentId={{tournamentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "scoring", "players"],
+              "query": [
+                { "key": "tournamentId", "value": "{{tournamentId}}" },
+                { "key": "playerId", "value": "{{playerId}}", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "League Standings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/scoring/standings/{{leagueId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Team",
+      "item": [
+        {
+          "name": "Get My Team",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/tournaments/{{tournamentId}}/team"
+          }
+        },
+        {
+          "name": "Set Team",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"playerIds\": [ \"{{playerId}}\", \"{{playerId2}}\", \"{{playerId3}}\", \"{{playerId4}}\", \"{{playerId5}}\", \"{{playerId6}}\", \"{{playerId7}}\" ]\n}"
+            },
+            "url": "{{baseUrl}}/api/tournaments/{{tournamentId}}/team"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lineup",
+      "item": [
+        {
+          "name": "Get My Lineup",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/tournaments/{{tournamentId}}/lineup"
+          }
+        },
+        {
+          "name": "Set Lineup",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"starters\": [ \"{{playerId}}\", \"{{playerId2}}\", \"{{playerId3}}\", \"{{playerId4}}\" ],\n  \"reserves\": [ \"{{playerId5}}\", \"{{playerId6}}\", \"{{playerId7}}\" ]\n}"
+            },
+            "url": "{{baseUrl}}/api/tournaments/{{tournamentId}}/lineup"
+          }
+        },
+        {
+          "name": "Lock Lineup",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/tournaments/{{tournamentId}}/lineup/lock"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Leagues",
+      "item": [
+        {
+          "name": "List Leagues",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/leagues?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "leagues"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                {
+                  "key": "tournamentId",
+                  "value": "{{tournamentId}}",
+                  "disabled": true
+                },
+                { "key": "isPublic", "value": "true", "disabled": true },
+                {
+                  "key": "status",
+                  "value": "REGISTRATION_OPEN",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get League",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/leagues/{{leagueId}}"
+          }
+        },
+        {
+          "name": "Get League Standings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/leagues/{{leagueId}}/standings"
+          }
+        },
+        {
+          "name": "Create League",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tournamentId\": \"{{tournamentId}}\",\n  \"name\": \"My League\",\n  \"isPublic\": true,\n  \"gameMode\": \"CLASSIC\",\n  \"entryFee\": 0,\n  \"maxMembers\": 20\n}"
+            },
+            "url": "{{baseUrl}}/api/leagues"
+          }
+        },
+        {
+          "name": "Join League",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inviteCode\": \"{{inviteCode}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/leagues/{{leagueId}}/join"
+          }
+        },
+        {
+          "name": "Update League",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My League Updated\",\n  \"maxMembers\": 30\n}"
+            },
+            "url": "{{baseUrl}}/api/leagues/{{leagueId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wallet",
+      "item": [
+        {
+          "name": "Get Wallet",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/wallet"
+          }
+        },
+        {
+          "name": "List Transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/wallet/transactions?page=1&limit=20"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "List Credit Packs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/payments/packs"
+          }
+        },
+        {
+          "name": "Create Checkout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"packId\": \"{{packId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/payments/checkout"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/users/me"
+          }
+        },
+        {
+          "name": "Update My Profile",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New Name\"\n}"
+            },
+            "url": "{{baseUrl}}/api/users/me"
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"oldpass123\",\n  \"newPassword\": \"newpass123\"\n}"
+            },
+            "url": "{{baseUrl}}/api/users/me/password"
+          }
+        },
+        {
+          "name": "List Users (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/users?page=1&limit=20"
+          }
+        },
+        {
+          "name": "Audit Log (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/users/logs?page=1&limit=20"
+          }
+        },
+        {
+          "name": "Block User (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"blocked\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/users/{{userId}}/block"
+          }
+        }
+      ]
+    }
+  ]
+}

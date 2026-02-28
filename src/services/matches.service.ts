@@ -1,0 +1,188 @@
+import crypto from "node:crypto";
+import mongoose from "mongoose";
+import { Match } from "../models/Match.js";
+import { Tournament } from "../models/Tournament.js";
+import { AppError } from "../lib/errors.js";
+import { paginationOptions, paginationMeta } from "../lib/pagination.js";
+import type { PaginationQuery } from "../lib/pagination.js";
+import {
+  MatchPhase,
+  MatchStatus,
+  MatchResult,
+  TournamentStatus,
+} from "../models/enums.js";
+import { appEmitter } from "../events/emitter.js";
+
+export function computeMatchId(
+  tournamentId: string,
+  phase: string,
+  bracketSlot: number | undefined,
+  scheduledAt: Date,
+): string {
+  const slot = bracketSlot ?? 0;
+  const input = `${tournamentId}${phase}${slot}${scheduledAt.toISOString()}`;
+  return crypto.createHash("sha256").update(input).digest("hex");
+}
+
+export interface ListMatchesQuery extends PaginationQuery {
+  tournamentId: string;
+  phase?: string;
+  status?: string;
+}
+
+export async function listForTournament(
+  tournamentId: string,
+  query: ListMatchesQuery,
+) {
+  const filter: Record<string, unknown> = { tournamentId };
+  if (query.phase) filter.phase = query.phase;
+  if (query.status) filter.status = query.status;
+  const opts = paginationOptions(query);
+  const [items, total] = await Promise.all([
+    Match.find(filter)
+      .sort({ scheduledAt: 1, bracketSlot: 1 })
+      .skip(opts.skip)
+      .limit(opts.limit)
+      .populate("homePairId")
+      .populate("awayPairId")
+      .lean(),
+    Match.countDocuments(filter),
+  ]);
+  return { items, meta: paginationMeta(total, query) };
+}
+
+export async function getById(id: string) {
+  const match = await Match.findById(id)
+    .populate("homePairId")
+    .populate("awayPairId")
+    .populate("poolGroupId")
+    .lean();
+  if (!match) throw new AppError("NOT_FOUND", "Match not found");
+  return match;
+}
+
+export interface CreateMatchBody {
+  tournamentId: string;
+  phase: MatchPhase;
+  scheduledAt: Date;
+  bracketSlot?: number;
+  poolGroupId?: string;
+  poolRound?: string;
+}
+
+export async function create(body: CreateMatchBody) {
+  const matchId = computeMatchId(
+    body.tournamentId,
+    body.phase,
+    body.bracketSlot,
+    body.scheduledAt,
+  );
+  const existing = await Match.findOne({ matchId }).lean();
+  if (existing)
+    throw new AppError(
+      "CONFLICT",
+      "Match with same slot/phase/time already exists",
+    );
+  const match = await Match.create({
+    tournamentId: body.tournamentId,
+    phase: body.phase,
+    status: MatchStatus.SCHEDULED,
+    matchId,
+    poolGroupId: body.poolGroupId,
+    poolRound: body.poolRound,
+    bracketSlot: body.bracketSlot,
+    scheduledAt: body.scheduledAt,
+  });
+  return match.toObject();
+}
+
+export interface UpdateScoreBody {
+  sets: Array<{ home: number; away: number }>;
+  result: MatchResult;
+}
+
+export async function updateScore(
+  matchId: string,
+  body: UpdateScoreBody,
+): Promise<void> {
+  const match = await Match.findById(matchId);
+  if (!match) throw new AppError("NOT_FOUND", "Match not found");
+  if (match.isCompleted) {
+    match.correctionHistory = match.correctionHistory ?? [];
+    match.correctionHistory.push({
+      at: new Date(),
+      previousSets: match.sets ?? [],
+      by: "admin",
+    });
+    match.status = "CORRECTED" as MatchStatus;
+  }
+  (match as unknown as { sets: typeof body.sets }).sets = body.sets;
+  match.result = body.result;
+  match.playedAt = match.playedAt ?? new Date();
+  const winnerId =
+    body.result === "WIN_2_0" || body.result === "WIN_2_1"
+      ? match.homePairId
+      : match.awayPairId;
+  const loserId =
+    body.result === "WIN_2_0" || body.result === "WIN_2_1"
+      ? match.awayPairId
+      : match.homePairId;
+  match.winnerId = winnerId ?? undefined;
+  match.loserId = loserId ?? undefined;
+  (match as unknown as { scoringDone: boolean }).scoringDone = false;
+  await match.save();
+  appEmitter.emit("match:updated", {
+    matchId: match._id.toString(),
+    tournamentId: match.tournamentId.toString(),
+    versionNumber: match.versionNumber,
+  });
+}
+
+export async function setLive(matchId: string): Promise<void> {
+  const match = await Match.findById(matchId);
+  if (!match) throw new AppError("NOT_FOUND", "Match not found");
+  await Match.updateOne(
+    { _id: matchId },
+    { $set: { status: MatchStatus.LIVE } },
+  );
+  const liveCount = await Match.countDocuments({
+    tournamentId: match.tournamentId,
+    status: MatchStatus.LIVE,
+  });
+  if (liveCount === 1) {
+    await Tournament.updateOne(
+      { _id: match.tournamentId },
+      { $set: { status: TournamentStatus.LIVE } },
+    );
+  }
+}
+
+export async function complete(
+  matchId: string,
+  body: UpdateScoreBody,
+): Promise<void> {
+  const match = await Match.findById(matchId);
+  if (!match) throw new AppError("NOT_FOUND", "Match not found");
+  const winnerId =
+    body.result === "WIN_2_0" || body.result === "WIN_2_1"
+      ? match.homePairId
+      : match.awayPairId;
+  const loserId =
+    body.result === "WIN_2_0" || body.result === "WIN_2_1"
+      ? match.awayPairId
+      : match.homePairId;
+  (match as unknown as { sets: typeof body.sets }).sets = body.sets;
+  match.result = body.result;
+  match.playedAt = match.playedAt ?? new Date();
+  match.winnerId = winnerId ?? undefined;
+  match.loserId = loserId ?? undefined;
+  match.isCompleted = true;
+  match.status = MatchStatus.COMPLETED;
+  match.versionNumber = (match.versionNumber ?? 0) + 1;
+  await match.save();
+  appEmitter.emit("match:updated", {
+    matchId: match._id.toString(),
+    tournamentId: match.tournamentId.toString(),
+    versionNumber: match.versionNumber,
+  });
+}
