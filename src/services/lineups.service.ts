@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Lineup } from "../models/Lineup.js";
 import { Team } from "../models/Team.js";
 import { AppError } from "../lib/errors.js";
@@ -58,8 +59,8 @@ export async function setLineup(
   }
   if (lineup.status !== LineupStatus.DRAFT)
     throw new AppError("BAD_REQUEST", "Can only update DRAFT lineup");
-  lineup.starters = body.starters as unknown as typeof lineup.starters;
-  lineup.reserves = body.reserves as unknown as typeof lineup.reserves;
+  lineup.starters = body.starters.map((id) => new mongoose.Types.ObjectId(id));
+  lineup.reserves = body.reserves.map((id) => new mongoose.Types.ObjectId(id));
   await lineup.save();
 }
 

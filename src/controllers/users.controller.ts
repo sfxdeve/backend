@@ -1,6 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
 import { param } from "../lib/params.js";
 import * as usersService from "../services/users.service.js";
+import type { AuditLogQuery } from "../services/users.service.js";
+import type { PaginationQuery } from "../lib/pagination.js";
 
 export async function getProfile(
   req: Request,
@@ -50,7 +52,7 @@ export async function listUsers(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const result = await usersService.listUsers(req.query as never);
+    const result = await usersService.listUsers(req.query as unknown as PaginationQuery & { search?: string });
     res.json(result);
   } catch (e) {
     next(e);
@@ -77,7 +79,7 @@ export async function getAuditLog(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const result = await usersService.getAuditLog(req.query as never);
+    const result = await usersService.getAuditLog(req.query as unknown as AuditLogQuery);
     res.json(result);
   } catch (e) {
     next(e);

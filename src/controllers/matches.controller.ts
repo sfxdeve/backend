@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { param } from "../lib/params.js";
 import * as matchesService from "../services/matches.service.js";
+import type { ListMatchesQuery } from "../services/matches.service.js";
 
 export async function list(
   req: Request,
@@ -10,7 +11,7 @@ export async function list(
   try {
     const result = await matchesService.listForTournament(
       req.query.tournamentId as string,
-      req.query as never,
+      req.query as unknown as ListMatchesQuery,
     );
     res.json(result);
   } catch (e) {
@@ -50,7 +51,11 @@ export async function updateScore(
   next: NextFunction,
 ): Promise<void> {
   try {
-    await matchesService.updateScore(param(req, "id"), req.body);
+    await matchesService.updateScore(
+      param(req, "id"),
+      req.body,
+      req.auth!.userId,
+    );
     res.status(204).send();
   } catch (e) {
     next(e);

@@ -9,7 +9,6 @@ import {
   updateTournamentBody,
   tournamentIdParam,
   listTournamentsQuery,
-  priceParamsBody,
 } from "../validators/tournaments.js";
 
 const router = Router();
@@ -63,11 +62,4 @@ router.post(
   validateRequest({ params: tournamentIdParam }),
   bracketsController.generateBracket,
 );
-router.put(
-  "/:id/price-params",
-  requireAdmin,
-  validateRequest({ params: tournamentIdParam, body: priceParamsBody }),
-  tournamentsController.updatePriceParams,
-);
-
 export default router;

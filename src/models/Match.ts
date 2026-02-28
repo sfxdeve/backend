@@ -1,5 +1,38 @@
-import mongoose from "mongoose";
+import mongoose, { type Types } from "mongoose";
 import { MatchPhase, MatchStatus, MatchResult, PoolRound } from "./enums.js";
+
+interface IMatchSet {
+  home: number;
+  away: number;
+}
+
+interface IMatchCorrectionEntry {
+  at: Date;
+  previousSets: IMatchSet[];
+  by: string;
+}
+
+export interface IMatch {
+  tournamentId: Types.ObjectId;
+  phase: MatchPhase;
+  status: MatchStatus;
+  matchId: string;
+  poolGroupId?: Types.ObjectId;
+  poolRound?: PoolRound;
+  bracketSlot?: string;
+  homePairId?: Types.ObjectId;
+  awayPairId?: Types.ObjectId;
+  scheduledAt: Date;
+  playedAt?: Date;
+  sets: IMatchSet[];
+  result?: MatchResult;
+  winnerId?: Types.ObjectId;
+  loserId?: Types.ObjectId;
+  isCompleted: boolean;
+  scoringDone: boolean;
+  versionNumber: number;
+  correctionHistory: IMatchCorrectionEntry[];
+}
 
 const setSchema = new mongoose.Schema(
   {
@@ -35,7 +68,7 @@ const matchSchema = new mongoose.Schema({
   matchId: { type: String, required: true, unique: true },
   poolGroupId: { type: mongoose.Schema.Types.ObjectId, ref: "PoolGroup" },
   poolRound: { type: String, enum: Object.values(PoolRound) },
-  bracketSlot: { type: Number },
+  bracketSlot: { type: String },
   homePairId: { type: mongoose.Schema.Types.ObjectId, ref: "Pair" },
   awayPairId: { type: mongoose.Schema.Types.ObjectId, ref: "Pair" },
   scheduledAt: { type: Date, required: true },
@@ -54,4 +87,4 @@ matchSchema.index({ tournamentId: 1, phase: 1 });
 matchSchema.index({ tournamentId: 1, isCompleted: 1 });
 matchSchema.index({ tournamentId: 1, bracketSlot: 1 });
 
-export const Match = mongoose.model("Match", matchSchema);
+export const Match = mongoose.model<IMatch>("Match", matchSchema);

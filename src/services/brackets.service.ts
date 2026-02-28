@@ -1,8 +1,15 @@
+import mongoose, { type ClientSession } from "mongoose";
 import { Match } from "../models/Match.js";
 import { Tournament } from "../models/Tournament.js";
 import { AppError } from "../lib/errors.js";
-import { MatchPhase } from "../models/enums.js";
+import { MatchPhase, MatchStatus } from "../models/enums.js";
 import { computeMatchId } from "./matches.service.js";
+import {
+  BRACKET_PROGRESSION,
+  POOL_WINNER_SEEDING,
+  POOL_LOSER_SEEDING,
+  MAIN_DRAW_SLOTS,
+} from "../scoring/bracket-config.js";
 
 export async function getForTournament(tournamentId: string) {
   const tournament = await Tournament.findById(tournamentId).lean();
@@ -30,22 +37,16 @@ export async function getForTournament(tournamentId: string) {
   };
 }
 
+/**
+ * Generate placeholder main draw matches (R12 through FINAL + 3RD).
+ * All created with status=SCHEDULED and no pairIds (teams resolved later via resolveSlot).
+ * Idempotent: skips slots that already exist.
+ */
 export async function generateBracket(tournamentId: string): Promise<void> {
   const tournament = await Tournament.findById(tournamentId).lean();
   if (!tournament) throw new AppError("NOT_FOUND", "Tournament not found");
-  // Create placeholder matches for MAIN_R12, MAIN_QF, MAIN_SF, MAIN_FINAL, MAIN_3RD
-  // Slot numbering and dependency tree would be defined by bracket structure.
-  // Minimal implementation: create one placeholder per phase with bracketSlot.
-  const phases: MatchPhase[] = [
-    MatchPhase.MAIN_R12,
-    MatchPhase.MAIN_QF,
-    MatchPhase.MAIN_SF,
-    MatchPhase.MAIN_FINAL,
-    MatchPhase.MAIN_3RD,
-  ];
-  for (let slot = 1; slot <= 16; slot++) {
-    const phase =
-      phases[Math.min(Math.floor((slot - 1) / 4), phases.length - 1)];
+
+  for (const { slot, phase } of MAIN_DRAW_SLOTS) {
     const scheduledAt = new Date(tournament.startDate);
     const mid = computeMatchId(tournamentId, phase, slot, scheduledAt);
     const exists = await Match.findOne({ matchId: mid }).lean();
@@ -53,7 +54,7 @@ export async function generateBracket(tournamentId: string): Promise<void> {
       await Match.create({
         tournamentId,
         phase,
-        status: "SCHEDULED",
+        status: MatchStatus.SCHEDULED,
         matchId: mid,
         bracketSlot: slot,
         scheduledAt,
@@ -62,13 +63,84 @@ export async function generateBracket(tournamentId: string): Promise<void> {
   }
 }
 
-export async function resolveSlot(matchId: string): Promise<void> {
-  const match = await Match.findById(matchId).lean();
-  if (!match || !match.winnerId || !match.loserId)
-    throw new AppError(
-      "BAD_REQUEST",
-      "Match not completed or missing winner/loser",
+/**
+ * Advance the winner and/or loser of a completed match into the next bracket slot(s).
+ * Handles both main draw progression and pool→main seeding.
+ * Must be called inside the same Mongoose transaction as the scoring update.
+ */
+export async function resolveSlot(
+  match: {
+    _id: unknown;
+    tournamentId: mongoose.Types.ObjectId | string;
+    bracketSlot?: string | number | null;
+    winnerId?: unknown;
+    loserId?: unknown;
+  },
+  session: ClientSession,
+): Promise<void> {
+  const slot = match.bracketSlot?.toString();
+  if (!slot || !match.winnerId) return;
+
+  const opts = { session };
+  const tournamentId = match.tournamentId;
+
+  // Check main draw progression
+  const progression = BRACKET_PROGRESSION[slot];
+  if (progression) {
+    if (progression.winner && match.winnerId) {
+      const { slot: nextSlot, seat } = progression.winner;
+      const field = seat === "home" ? "homePairId" : "awayPairId";
+      await Match.updateOne(
+        {
+          tournamentId: tournamentId as mongoose.Types.ObjectId,
+          bracketSlot: nextSlot,
+        },
+        { $set: { [field]: match.winnerId as mongoose.Types.ObjectId } },
+        opts,
+      );
+    }
+    if (progression.loser && match.loserId) {
+      const { slot: nextSlot, seat } = progression.loser;
+      const field = seat === "home" ? "homePairId" : "awayPairId";
+      await Match.updateOne(
+        {
+          tournamentId: tournamentId as mongoose.Types.ObjectId,
+          bracketSlot: nextSlot,
+        },
+        { $set: { [field]: match.loserId as mongoose.Types.ObjectId } },
+        opts,
+      );
+    }
+    return;
+  }
+
+  // Check pool winner → main draw seeding
+  const winnerSeed = POOL_WINNER_SEEDING[slot];
+  if (winnerSeed && match.winnerId) {
+    const { slot: nextSlot, seat } = winnerSeed;
+    const field = seat === "home" ? "homePairId" : "awayPairId";
+    await Match.updateOne(
+      {
+        tournamentId: tournamentId as mongoose.Types.ObjectId,
+        bracketSlot: nextSlot,
+      },
+      { $set: { [field]: match.winnerId as mongoose.Types.ObjectId } },
+      opts,
     );
-  // Update next bracket slot(s) with winner/loser - structure depends on bracket layout
-  // Stub: no-op; full implementation would update homePairId/awayPairId of successor matches
+  }
+
+  // Check pool loser → main draw seeding
+  const loserSeed = POOL_LOSER_SEEDING[slot];
+  if (loserSeed && match.loserId) {
+    const { slot: nextSlot, seat } = loserSeed;
+    const field = seat === "home" ? "homePairId" : "awayPairId";
+    await Match.updateOne(
+      {
+        tournamentId: tournamentId as mongoose.Types.ObjectId,
+        bracketSlot: nextSlot,
+      },
+      { $set: { [field]: match.loserId as mongoose.Types.ObjectId } },
+      opts,
+    );
+  }
 }

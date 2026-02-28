@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { param } from "../lib/params.js";
 import * as leaguesService from "../services/leagues.service.js";
+import type { ListLeaguesQuery } from "../services/leagues.service.js";
 
 export async function list(
   req: Request,
@@ -8,7 +9,7 @@ export async function list(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const result = await leaguesService.listPublic(req.query as never);
+    const result = await leaguesService.listPublic(req.query as unknown as ListLeaguesQuery);
     res.json(result);
   } catch (e) {
     next(e);

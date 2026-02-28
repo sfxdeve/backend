@@ -21,6 +21,7 @@ export const listPlayersQuery = z.object({
   gender: z.enum([Gender.M, Gender.W]).optional(),
   search: z.string().optional(),
   tournamentId: z.string().optional(),
+  seasonId: z.string().optional(),
 });
 
 export const adjustPriceBody = z.object({

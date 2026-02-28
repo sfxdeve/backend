@@ -1,5 +1,6 @@
 import { Player } from "../models/Player.js";
 import { Pair } from "../models/Pair.js";
+import { Tournament } from "../models/Tournament.js";
 import { AppError } from "../lib/errors.js";
 import { paginationOptions, paginationMeta } from "../lib/pagination.js";
 import type { PaginationQuery } from "../lib/pagination.js";
@@ -9,6 +10,7 @@ export interface ListPlayersQuery extends PaginationQuery {
   gender?: string;
   search?: string;
   tournamentId?: string;
+  seasonId?: string;
 }
 
 export async function list(query: ListPlayersQuery) {
@@ -28,6 +30,20 @@ export async function list(query: ListPlayersQuery) {
       tournamentId: query.tournamentId,
     });
     const allIds = [...new Set([...pairPlayerIds, ...pairPlayerIds2])];
+    filter._id = { $in: allIds };
+  } else if (query.seasonId) {
+    const tournaments = await Tournament.find(
+      { seasonId: query.seasonId },
+      { _id: 1 },
+    ).lean();
+    const tournamentIds = tournaments.map((t) => t._id);
+    const pairPlayerIds1 = await Pair.distinct("player1Id", {
+      tournamentId: { $in: tournamentIds },
+    });
+    const pairPlayerIds2 = await Pair.distinct("player2Id", {
+      tournamentId: { $in: tournamentIds },
+    });
+    const allIds = [...new Set([...pairPlayerIds1, ...pairPlayerIds2])];
     filter._id = { $in: allIds };
   }
   const opts = paginationOptions(query);

@@ -22,9 +22,8 @@ export async function createGroup(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const tid = (req.query as { tournamentId?: string }).tournamentId;
-    if (!tid) throw new Error("tournamentId required");
-    const result = await poolsService.createGroup(tid, req.body);
+    const { tournamentId } = req.query as { tournamentId: string };
+    const result = await poolsService.createGroup(tournamentId, req.body);
     res.status(201).json(result);
   } catch (e) {
     next(e);

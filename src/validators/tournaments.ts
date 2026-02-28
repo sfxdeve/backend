@@ -1,5 +1,23 @@
 import { z } from "zod";
+import { toZonedTime } from "date-fns-tz";
 import { Gender } from "../models/enums.js";
+
+const ROME_TZ = "Europe/Rome";
+
+/**
+ * Validates that the given Date (in UTC) corresponds to Thursday 23:59 in Europe/Rome.
+ * Spec §3.4 + §4: registration_locked = Thursday 23:59 Europe/Rome.
+ */
+function isThursdayMidnight(date: Date): boolean {
+  const zoned = toZonedTime(date, ROME_TZ);
+  return (
+    zoned.getDay() === 4 && zoned.getHours() === 23 && zoned.getMinutes() === 59
+  );
+}
+
+const lineupLockAtSchema = z.coerce.date().refine(isThursdayMidnight, {
+  message: "lineupLockAt must be Thursday 23:59 Europe/Rome",
+});
 
 const scoringTableSchema = z
   .object({
@@ -22,7 +40,7 @@ export const createTournamentBody = z.object({
   gender: z.enum([Gender.M, Gender.W]),
   startDate: z.coerce.date(),
   endDate: z.coerce.date(),
-  lineupLockAt: z.coerce.date(),
+  lineupLockAt: lineupLockAtSchema,
   rosterSize: z.number().int().min(4).max(30).optional(),
   officialUrl: z.url().optional().or(z.literal("")),
   scoringTable: scoringTableSchema,
@@ -40,10 +58,4 @@ export const listTournamentsQuery = z.object({
   seasonId: z.string().optional(),
   gender: z.enum([Gender.M, Gender.W]).optional(),
   status: z.string().optional(),
-});
-
-export const priceParamsBody = z.object({
-  priceVolatilityFactor: z.number().min(0).optional(),
-  priceFloor: z.number().min(0).optional(),
-  priceCap: z.number().min(0).optional(),
 });

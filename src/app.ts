@@ -21,6 +21,7 @@ import {
 import { notFoundHandler, errorHandler } from "./middlewares/error-handler.js";
 
 import * as paymentsController from "./controllers/payments.controller.js";
+import adminRoutes from "./routes/admin.js";
 import authRoutes from "./routes/auth.js";
 import bracketsRoutes from "./routes/brackets.js";
 import leaguesRoutes from "./routes/leagues.js";
@@ -107,6 +108,7 @@ export async function bootstrap(): Promise<{
   app.use(defaultRateLimiter);
 
   // API routes (tournament-scoped before base /api/tournaments)
+  app.use("/api/admin", adminRoutes);
   app.use("/api/auth", authRoutes);
   app.use("/api/brackets", bracketsRoutes);
   app.use("/api/leagues", leaguesRoutes);

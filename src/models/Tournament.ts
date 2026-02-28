@@ -1,5 +1,35 @@
-import mongoose from "mongoose";
+import mongoose, { type Types } from "mongoose";
 import { Gender, TournamentStatus, MatchPhase } from "./enums.js";
+
+interface IScoringTable {
+  QUALIFICATION: number;
+  POOL: number;
+  MAIN_R12: number;
+  MAIN_QF: number;
+  MAIN_SF: number;
+  MAIN_FINAL: number;
+  MAIN_3RD: number;
+  bonusWin2_0: number;
+  bonusWin2_1: number;
+}
+
+export interface ITournament {
+  seasonId: Types.ObjectId;
+  name: string;
+  location: string;
+  gender: string;
+  status: string;
+  startDate: Date;
+  endDate: Date;
+  lineupLockAt: Date;
+  rosterSize: number;
+  officialUrl?: string;
+  scoringTable: IScoringTable;
+  priceVolatilityFactor?: number;
+  priceFloor?: number;
+  priceCap?: number;
+  marketWindowOpen: boolean;
+}
 
 const defaultScoringTable = {
   QUALIFICATION: 1,
@@ -63,4 +93,4 @@ const tournamentSchema = new mongoose.Schema({
 
 tournamentSchema.index({ seasonId: 1, status: 1 });
 
-export const Tournament = mongoose.model("Tournament", tournamentSchema);
+export const Tournament = mongoose.model<ITournament>("Tournament", tournamentSchema);

@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { param } from "../lib/params.js";
 import * as tournamentsService from "../services/tournaments.service.js";
+import type { ListTournamentsQuery } from "../services/tournaments.service.js";
 
 export async function list(
   req: Request,
@@ -8,7 +9,7 @@ export async function list(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const result = await tournamentsService.list(req.query as never);
+    const result = await tournamentsService.list(req.query as unknown as ListTournamentsQuery);
     res.json(result);
   } catch (e) {
     next(e);
@@ -87,19 +88,6 @@ export async function forceLock(
 ): Promise<void> {
   try {
     await tournamentsService.forceLock(param(req, "id"));
-    res.status(204).send();
-  } catch (e) {
-    next(e);
-  }
-}
-
-export async function updatePriceParams(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> {
-  try {
-    await tournamentsService.updatePriceParams(param(req, "id"), req.body);
     res.status(204).send();
   } catch (e) {
     next(e);

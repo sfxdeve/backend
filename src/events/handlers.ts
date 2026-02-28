@@ -6,11 +6,16 @@ import { getLeagueStandings } from "../services/scoring.service.js";
 import { Tournament } from "../models/Tournament.js";
 import { Player } from "../models/Player.js";
 import { PlayerScore } from "../models/PlayerScore.js";
+import { League } from "../models/League.js";
+import { LeagueMember } from "../models/LeagueMember.js";
+import { AuditLog, AuditLogType } from "../models/AuditLog.js";
+import { createNotification } from "../services/notifications.service.js";
+import { NotificationType } from "../models/Notification.js";
+import { sendAlert } from "../lib/alerts.js";
+import { computeNewPrice } from "../scoring/price-engine.js";
 import { logger } from "../lib/logger.js";
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
+// ─── match:updated ──────────────────────────────────────────────────────────
 
 appEmitter.on("match:updated", async (payload) => {
   try {
@@ -73,10 +78,74 @@ appEmitter.on("match:updated", async (payload) => {
         standings,
       });
     }
+
+    // Notify affected users of match result (best-effort)
+    if (result.tournamentId && result.leagueIds.length > 0) {
+      for (const leagueId of result.leagueIds) {
+        const members = await LeagueMember.find(
+          { leagueId: new mongoose.Types.ObjectId(leagueId) },
+          { userId: 1 },
+        ).lean();
+        for (const member of members) {
+          await createNotification(
+            member.userId.toString(),
+            NotificationType.MATCH_RESULT,
+            {
+              matchId: result.matchInfo?.matchId,
+              tournamentId: result.tournamentId,
+            },
+          ).catch(() => {});
+        }
+      }
+    }
   } catch (e) {
     logger.error({ err: e, payload }, "match:updated handler failed");
+    await sendAlert(
+      "match:updated handler error",
+      `matchId=${payload.matchId} tournamentId=${payload.tournamentId} error=${String(e)}`,
+    ).catch(() => {});
   }
 });
+
+// ─── tournament:locked ───────────────────────────────────────────────────────
+
+appEmitter.on("tournament:locked", async (payload) => {
+  try {
+    await AuditLog.create({
+      type: AuditLogType.ADMIN_ACTION,
+      entity: "Tournament",
+      entityId: new mongoose.Types.ObjectId(payload.tournamentId),
+      tournamentId: new mongoose.Types.ObjectId(payload.tournamentId),
+      by: "system",
+      meta: { action: "registration_locked" },
+    });
+  } catch (e) {
+    logger.error({ err: e, payload }, "tournament:locked handler failed");
+  }
+});
+
+// ─── lineup:locked ───────────────────────────────────────────────────────────
+
+appEmitter.on("lineup:locked", async (payload) => {
+  try {
+    await AuditLog.create({
+      type: AuditLogType.LINEUP_LOCKED,
+      entity: "Lineup",
+      entityId: new mongoose.Types.ObjectId(payload.lineupId),
+      tournamentId: new mongoose.Types.ObjectId(payload.tournamentId),
+      by: "system",
+      meta: { userId: payload.userId },
+    });
+
+    await createNotification(payload.userId, NotificationType.LINEUP_LOCKED, {
+      tournamentId: payload.tournamentId,
+    }).catch(() => {});
+  } catch (e) {
+    logger.error({ err: e, payload }, "lineup:locked handler failed");
+  }
+});
+
+// ─── tournament:finalized ────────────────────────────────────────────────────
 
 appEmitter.on("tournament:finalized", async (payload) => {
   try {
@@ -86,7 +155,6 @@ appEmitter.on("tournament:finalized", async (payload) => {
     const volatility = tournament.priceVolatilityFactor ?? 1;
     const floor = tournament.priceFloor ?? 10;
     const cap = tournament.priceCap ?? 200;
-    const maxChangePct = 0.15;
 
     const tournamentIdObj = new mongoose.Types.ObjectId(payload.tournamentId);
     const scores = await PlayerScore.aggregate([
@@ -97,20 +165,16 @@ appEmitter.on("tournament:finalized", async (payload) => {
     for (const row of scores) {
       const player = await Player.findById(row._id);
       if (!player) continue;
-      const oldPrice = player.currentPrice ?? 100;
-      const movingAvg = player.movingAveragePoints ?? 0;
-      const tournamentPoints = row.totalPoints as number;
-      const delta = volatility * (tournamentPoints - movingAvg);
-      let newPrice = Math.round(oldPrice + delta);
-      const maxChange = oldPrice * maxChangePct;
-      newPrice = clamp(newPrice, oldPrice - maxChange, oldPrice + maxChange);
-      newPrice = clamp(newPrice, floor, cap);
-
+      const { newPrice, newMovingAverage } = computeNewPrice({
+        oldPrice: player.currentPrice ?? 100,
+        tournamentPoints: row.totalPoints as number,
+        movingAveragePoints: player.movingAveragePoints ?? 0,
+        volatility,
+        floor,
+        cap,
+      });
       player.currentPrice = newPrice;
-      const n = 1; // simple: just this tournament in average
-      player.movingAveragePoints =
-        (player.movingAveragePoints ?? 0) * (1 - 1 / (n + 1)) +
-        tournamentPoints / (n + 1);
+      player.movingAveragePoints = newMovingAverage;
       await player.save();
     }
 
@@ -118,11 +182,30 @@ appEmitter.on("tournament:finalized", async (payload) => {
       { _id: payload.tournamentId },
       { $set: { marketWindowOpen: true } },
     );
+
+    // Notify all league members of finalization (best-effort)
+    const leagues = await League.find(
+      { tournamentId: tournamentIdObj },
+      { _id: 1 },
+    ).lean();
+    for (const league of leagues) {
+      const members = await LeagueMember.find(
+        { leagueId: league._id },
+        { userId: 1 },
+      ).lean();
+      for (const member of members) {
+        await createNotification(
+          member.userId.toString(),
+          NotificationType.TOURNAMENT_FINALIZED,
+          { tournamentId: payload.tournamentId },
+        ).catch(() => {});
+      }
+    }
   } catch (e) {
     logger.error({ err: e, payload }, "tournament:finalized handler failed");
+    await sendAlert(
+      "tournament:finalized handler error",
+      `tournamentId=${payload.tournamentId} error=${String(e)}`,
+    ).catch(() => {});
   }
 });
-
-export function registerEventHandlers(): void {
-  // Handlers registered above via appEmitter.on()
-}

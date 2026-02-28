@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import * as walletService from "../services/wallet.service.js";
+import type { PaginationQuery } from "../lib/pagination.js";
 
 export async function getWallet(
   req: Request,
@@ -24,7 +25,7 @@ export async function getTransactions(
     const userId = req.auth!.userId;
     const result = await walletService.getTransactions(
       userId,
-      req.query as never,
+      req.query as unknown as PaginationQuery,
     );
     res.json(result);
   } catch (e) {

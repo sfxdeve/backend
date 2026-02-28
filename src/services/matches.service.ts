@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import mongoose from "mongoose";
 import { Match } from "../models/Match.js";
 import { Tournament } from "../models/Tournament.js";
+import { AuditLog, AuditLogType } from "../models/AuditLog.js";
 import { AppError } from "../lib/errors.js";
 import { paginationOptions, paginationMeta } from "../lib/pagination.js";
 import type { PaginationQuery } from "../lib/pagination.js";
@@ -16,10 +17,10 @@ import { appEmitter } from "../events/emitter.js";
 export function computeMatchId(
   tournamentId: string,
   phase: string,
-  bracketSlot: number | undefined,
+  bracketSlot: string | number | undefined,
   scheduledAt: Date,
 ): string {
-  const slot = bracketSlot ?? 0;
+  const slot = bracketSlot ?? "";
   const input = `${tournamentId}${phase}${slot}${scheduledAt.toISOString()}`;
   return crypto.createHash("sha256").update(input).digest("hex");
 }
@@ -65,7 +66,7 @@ export interface CreateMatchBody {
   tournamentId: string;
   phase: MatchPhase;
   scheduledAt: Date;
-  bracketSlot?: number;
+  bracketSlot?: string;
   poolGroupId?: string;
   poolRound?: string;
 }
@@ -104,19 +105,25 @@ export interface UpdateScoreBody {
 export async function updateScore(
   matchId: string,
   body: UpdateScoreBody,
+  adminUserId: string,
 ): Promise<void> {
   const match = await Match.findById(matchId);
   if (!match) throw new AppError("NOT_FOUND", "Match not found");
-  if (match.isCompleted) {
+
+  const previousSets = match.sets ?? [];
+  const previousResult = match.result;
+  const isCorrection = match.isCompleted;
+
+  if (isCorrection) {
     match.correctionHistory = match.correctionHistory ?? [];
     match.correctionHistory.push({
       at: new Date(),
-      previousSets: match.sets ?? [],
-      by: "admin",
+      previousSets,
+      by: adminUserId,
     });
-    match.status = "CORRECTED" as MatchStatus;
+    match.status = MatchStatus.CORRECTED;
   }
-  (match as unknown as { sets: typeof body.sets }).sets = body.sets;
+  match.sets = body.sets;
   match.result = body.result;
   match.playedAt = match.playedAt ?? new Date();
   const winnerId =
@@ -129,8 +136,25 @@ export async function updateScore(
       : match.homePairId;
   match.winnerId = winnerId ?? undefined;
   match.loserId = loserId ?? undefined;
-  (match as unknown as { scoringDone: boolean }).scoringDone = false;
+  match.scoringDone = false;
   await match.save();
+
+  if (isCorrection) {
+    await AuditLog.create({
+      type: AuditLogType.MATCH_CORRECTED,
+      entity: "Match",
+      entityId: match._id,
+      tournamentId: match.tournamentId,
+      by: adminUserId,
+      meta: {
+        previousSets,
+        newSets: body.sets,
+        previousResult,
+        newResult: body.result,
+      },
+    });
+  }
+
   appEmitter.emit("match:updated", {
     matchId: match._id.toString(),
     tournamentId: match.tournamentId.toString(),
@@ -171,7 +195,7 @@ export async function complete(
     body.result === "WIN_2_0" || body.result === "WIN_2_1"
       ? match.awayPairId
       : match.homePairId;
-  (match as unknown as { sets: typeof body.sets }).sets = body.sets;
+  match.sets = body.sets;
   match.result = body.result;
   match.playedAt = match.playedAt ?? new Date();
   match.winnerId = winnerId ?? undefined;

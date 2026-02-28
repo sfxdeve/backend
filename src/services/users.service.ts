@@ -1,6 +1,5 @@
 import { User } from "../models/User.js";
-import { CreditTransaction } from "../models/CreditTransaction.js";
-import { Match } from "../models/Match.js";
+import { AuditLog } from "../models/AuditLog.js";
 import { AppError } from "../lib/errors.js";
 import { hashSecret, compareSecret } from "../lib/hash.js";
 import { revokeAllUserSessions } from "../lib/session.js";
@@ -60,24 +59,31 @@ export async function blockUser(id: string, blocked: boolean): Promise<void> {
   await User.updateOne({ _id: id }, { $set: { isBlocked: blocked } });
 }
 
-export async function getAuditLog(query: PaginationQuery) {
+export interface AuditLogQuery extends PaginationQuery {
+  type?: string;
+  tournamentId?: string;
+  from?: Date;
+  to?: Date;
+}
+
+export async function getAuditLog(query: AuditLogQuery) {
+  const filter: Record<string, unknown> = {};
+  if (query.type) filter.type = query.type;
+  if (query.tournamentId) filter.tournamentId = query.tournamentId;
+  if (query.from || query.to) {
+    filter.createdAt = {
+      ...(query.from ? { $gte: query.from } : {}),
+      ...(query.to ? { $lte: query.to } : {}),
+    };
+  }
   const opts = paginationOptions(query);
-  const [txs, matches] = await Promise.all([
-    CreditTransaction.find({})
+  const [items, total] = await Promise.all([
+    AuditLog.find(filter)
       .sort({ createdAt: -1 })
       .skip(opts.skip)
       .limit(opts.limit)
-      .populate("walletId", "userId")
       .lean(),
-    Match.find({ "correctionHistory.0": { $exists: true } })
-      .select("matchId tournamentId correctionHistory")
-      .sort({ "correctionHistory.at": -1 })
-      .limit(50)
-      .lean(),
+    AuditLog.countDocuments(filter),
   ]);
-  return {
-    creditTransactions: txs,
-    matchCorrections: matches,
-    meta: paginationMeta(await CreditTransaction.countDocuments(), query),
-  };
+  return { items, meta: paginationMeta(total, query) };
 }

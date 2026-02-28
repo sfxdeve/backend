@@ -4,16 +4,21 @@ import { Tournament } from "../models/Tournament.js";
 import { Pair } from "../models/Pair.js";
 import { PlayerScore } from "../models/PlayerScore.js";
 import { Lineup } from "../models/Lineup.js";
+import { Team } from "../models/Team.js";
 import { League } from "../models/League.js";
 import { LeagueMember } from "../models/LeagueMember.js";
+import { AuditLog, AuditLogType } from "../models/AuditLog.js";
 import { MatchPhase, MatchResult } from "../models/enums.js";
+import { AppError } from "../lib/errors.js";
 import { computeMatchPoints } from "../scoring/engine.js";
 import type { ScoringTable } from "../scoring/engine.js";
 import { withMongoTransaction } from "../lib/tx.js";
+import { resolveSlot } from "./brackets.service.js";
 import type { Types } from "mongoose";
 
 export interface LineupDoc {
   _id: Types.ObjectId;
+  userId: Types.ObjectId;
   starters: Types.ObjectId[];
   reserves: Types.ObjectId[];
 }
@@ -25,7 +30,7 @@ export interface PlayerScoreAggregate {
 
 /**
  * Compute fantasy points for a lineup with auto-substitution: if a starter has no
- * matches in the tournament, substitute the first reserve (in order) that has points.
+ * points in the eligible score map, substitute the first unused reserve (in order) that has points.
  */
 export function computeFantasyTeamPoints(
   lineup: LineupDoc,
@@ -53,7 +58,7 @@ export function computeFantasyTeamPoints(
           break;
         }
       }
-      if (!subbed) effective.push(sid); // no sub, count 0
+      if (!subbed) effective.push(sid); // no sub available, count 0
     }
   }
 
@@ -63,27 +68,89 @@ export function computeFantasyTeamPoints(
   );
 }
 
+/**
+ * Recompute all lineups for a tournament, enforcing anti-retroactive scoring:
+ * only PlayerScore records with playedAt >= team.registeredAt are counted for each lineup.
+ * Returns the count of lineups updated.
+ */
 export async function recomputeLineupsForTournament(
   tournamentId: string,
   session?: ClientSession,
-): Promise<void> {
+): Promise<number> {
   const opts = session ? { session } : {};
-  const scores = await PlayerScore.find({ tournamentId }, null, opts).lean();
-  const playerIdToPoints = new Map<string, number>();
-  for (const s of scores) {
-    const id = s.playerId.toString();
-    playerIdToPoints.set(id, (playerIdToPoints.get(id) ?? 0) + s.totalPoints);
-  }
 
-  const lineups = await Lineup.find({ tournamentId }, null, opts).lean();
+  // Fetch all PlayerScore records for the tournament (with playedAt for date filtering)
+  const scores = await PlayerScore.find({ tournamentId }, null, opts).lean();
+
+  // Fetch all lineups for the tournament
+  const lineups = (await Lineup.find(
+    { tournamentId },
+    null,
+    opts,
+  ).lean()) as LineupDoc[];
+
+  let affectedCount = 0;
   for (const lineup of lineups) {
+    // Find the team to get registeredAt (anti-retroactive anchor, §21)
+    const team = await Team.findOne(
+      { userId: lineup.userId, tournamentId },
+      { registeredAt: 1 },
+      opts,
+    ).lean();
+    const registeredAt = team?.registeredAt ? new Date(team.registeredAt) : new Date(0);
+
+    // Only include scores for matches played at or after registration
+    const eligibleScores = scores.filter((s) => {
+      if (!s.playedAt) return false;
+      return new Date(s.playedAt) >= registeredAt;
+    });
+
+    const playerIdToPoints = new Map<string, number>();
+    for (const s of eligibleScores) {
+      const id = s.playerId.toString();
+      playerIdToPoints.set(id, (playerIdToPoints.get(id) ?? 0) + s.totalPoints);
+    }
+
     const totalPoints = computeFantasyTeamPoints(lineup, playerIdToPoints);
     await Lineup.updateOne(
       { _id: lineup._id },
       { $set: { totalPoints } },
       opts,
     );
+    affectedCount++;
   }
+
+  return affectedCount;
+}
+
+async function updateLeagueMemberPoints(
+  leagues: Array<{ _id: Types.ObjectId }>,
+  tournamentId: string,
+  opts: { session: ClientSession },
+): Promise<string[]> {
+  const leagueIds: string[] = [];
+  for (const league of leagues) {
+    const members = await LeagueMember.find(
+      { leagueId: league._id },
+      { userId: 1 },
+      opts,
+    ).lean();
+    for (const member of members) {
+      const lineup = await Lineup.findOne(
+        { userId: member.userId, tournamentId },
+        { totalPoints: 1 },
+        opts,
+      ).lean();
+      const totalPoints = lineup?.totalPoints ?? 0;
+      await LeagueMember.updateOne(
+        { _id: member._id },
+        { $set: { totalPoints } },
+        opts,
+      );
+    }
+    leagueIds.push(league._id.toString());
+  }
+  return leagueIds;
 }
 
 export interface OnMatchUpdatedResult {
@@ -105,16 +172,13 @@ export async function onMatchUpdated(
   return withMongoTransaction(async (session) => {
     const opts = { session };
     const match = await Match.findById(matchId, null, opts);
-    if (!match) throw new Error("Match not found");
+    if (!match) throw new AppError("NOT_FOUND", "Match not found");
     if (match.versionNumber !== versionNumber) return { leagueIds: [] }; // idempotency
-    if ((match as unknown as { scoringDone?: boolean }).scoringDone)
-      return { leagueIds: [] }; // prevent double-scoring
+    if (match.scoringDone) return { leagueIds: [] }; // prevent double-scoring
 
     const tournament = await Tournament.findById(tournamentId, null, opts);
-    if (!tournament) throw new Error("Tournament not found");
-    const scoringTable = {
-      ...(tournament.scoringTable as unknown as Record<string, number>),
-    } as unknown as ScoringTable;
+    if (!tournament) throw new AppError("NOT_FOUND", "Tournament not found");
+    const scoringTable: ScoringTable = { ...tournament.scoringTable };
 
     const winnerId = match.winnerId;
     const loserId = match.loserId;
@@ -126,7 +190,7 @@ export async function onMatchUpdated(
       Pair.findById(winnerId, null, opts).lean(),
       Pair.findById(loserId, null, opts).lean(),
     ]);
-    if (!winnerPair || !loserPair) throw new Error("Pair not found");
+    if (!winnerPair || !loserPair) throw new AppError("NOT_FOUND", "Pair not found");
 
     const winnerPlayerIds = [
       winnerPair.player1Id.toString(),
@@ -177,47 +241,52 @@ export async function onMatchUpdated(
       opts,
     );
 
-    await recomputeLineupsForTournament(tournamentId, session);
+    // Advance bracket: wire winner/loser into next slot(s) — same transaction
+    await resolveSlot(
+      {
+        _id: match._id,
+        tournamentId: match.tournamentId,
+        bracketSlot: match.bracketSlot,
+        winnerId: match.winnerId,
+        loserId: match.loserId,
+      },
+      session,
+    );
+
+    // Recompute all lineups with anti-retroactive scoring filter
+    const affectedLineups = await recomputeLineupsForTournament(
+      tournamentId,
+      session,
+    );
 
     const leagues = await League.find(
       { tournamentId },
       { _id: 1 },
       opts,
     ).lean();
-    const leagueIds: string[] = [];
+    const leagueIds = await updateLeagueMemberPoints(leagues, tournamentId, opts);
 
-    for (const league of leagues) {
-      const members = await LeagueMember.find(
-        { leagueId: league._id },
-        { userId: 1 },
-        opts,
-      ).lean();
-      for (const member of members) {
-        const lineup = await Lineup.findOne(
-          { userId: member.userId, tournamentId },
-          { totalPoints: 1 },
-          opts,
-        ).lean();
-        const totalPoints = lineup?.totalPoints ?? 0;
-        await LeagueMember.updateOne(
-          { _id: member._id },
-          { $set: { totalPoints } },
-          opts,
-        );
-      }
-      leagueIds.push(league._id.toString());
-    }
+    // Write audit log (inside transaction so it rolls back on failure)
+    await AuditLog.create(
+      [
+        {
+          type: AuditLogType.RECOMPUTE_RUN,
+          entity: "Match",
+          entityId: match._id,
+          tournamentId: new mongoose.Types.ObjectId(tournamentId),
+          by: "system",
+          meta: { affectedLineups, versionNumber },
+        },
+      ],
+      opts,
+    );
 
-    const matchDoc = match as unknown as {
-      sets?: Array<{ home: number; away: number }>;
-      result?: string;
-    };
     return {
       leagueIds,
       matchInfo: {
         matchId: match._id.toString(),
-        sets: matchDoc.sets ?? [],
-        result: matchDoc.result ?? "",
+        sets: match.sets ?? [],
+        result: match.result ?? "",
       },
       playerIds: [...winnerPlayerIds, ...loserPlayerIds],
       tournamentId,

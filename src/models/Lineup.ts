@@ -1,5 +1,15 @@
-import mongoose from "mongoose";
+import mongoose, { type Types } from "mongoose";
 import { LineupStatus } from "./enums.js";
+
+export interface ILineup {
+  userId: Types.ObjectId;
+  tournamentId: Types.ObjectId;
+  starters: Types.ObjectId[];
+  reserves: Types.ObjectId[];
+  status: string;
+  lockedAt?: Date;
+  totalPoints: number;
+}
 
 const lineupSchema = new mongoose.Schema({
   userId: {
@@ -31,4 +41,4 @@ const lineupSchema = new mongoose.Schema({
 
 lineupSchema.index({ userId: 1, tournamentId: 1 }, { unique: true });
 
-export const Lineup = mongoose.model("Lineup", lineupSchema);
+export const Lineup = mongoose.model<ILineup>("Lineup", lineupSchema);
