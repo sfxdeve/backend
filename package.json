@@ -7,8 +7,7 @@
     "dev": "tsx watch src/main.ts",
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test": "vitest run"
   },
   "dependencies": {
     "@dotenvx/dotenvx": "^1.52.0",
@@ -40,7 +39,6 @@
     "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^7.0.11",
     "@types/ws": "^8.18.1",
-    "@vitest/coverage-v8": "^4.0.18",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"

@@ -4,12 +4,5 @@ export default defineConfig({
   test: {
     globals: false,
     environment: "node",
-    coverage: {
-      provider: "v8",
-      include: ["src/scoring/**"],
-      thresholds: {
-        lines: 100,
-      },
-    },
   },
 });

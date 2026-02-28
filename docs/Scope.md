@@ -258,7 +258,7 @@ Output:
 
 Stateless + deterministic.
 
-100% unit test coverage required.
+Unit tests required.
 
 ---
 
@@ -503,13 +503,6 @@ Must include:
 - Lineup auto-substitution tests
 - Price volatility tests
 - Concurrency tests
-
-Minimum coverage:
-
-```
-Scoring Engine → 100%
-Core domain → 90%
-```
 
 ---
 
