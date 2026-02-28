@@ -6,9 +6,11 @@ import { logger } from "./logger.js";
 
 export async function seedAdmin(): Promise<void> {
   const existing = await User.findOne({ role: "ADMIN" }).lean();
+
   if (existing) return;
 
   const passwordHash = await hashSecret(env.ADMIN_PASSWORD);
+
   await User.create({
     email: env.ADMIN_EMAIL,
     name: env.ADMIN_NAME,
@@ -45,5 +47,6 @@ export async function seedCreditPacks(): Promise<void> {
       active: true,
     },
   ]);
+
   logger.info("Credit packs seeded");
 }
