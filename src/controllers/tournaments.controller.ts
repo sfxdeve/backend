@@ -1,14 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
-import { getParam } from "../lib/request.js";
+import { getParam, getAccessContext } from "../lib/request.js";
 import type { BulkEntriesBody } from "../validators/tournaments.validators.js";
 import * as tournamentService from "../services/tournament.service.js";
-
-function accessContext(req: Request): tournamentService.AccessContext {
-  return {
-    userId: req.auth?.userId,
-    isAdmin: req.auth?.role === "ADMIN",
-  };
-}
 
 export async function listTournaments(
   req: Request,
@@ -26,7 +19,7 @@ export async function listTournaments(
     const result = await tournamentService.listTournaments(
       { seasonId: q.seasonId, gender: q.gender, status: q.status },
       { page: q.page, limit: q.limit },
-      accessContext(req),
+      getAccessContext(req),
     );
     res.json(result);
   } catch (err) {
@@ -56,7 +49,7 @@ export async function getTournament(
     const tournamentId = getParam(req, "tournamentId");
     const tournament = await tournamentService.getTournament(
       tournamentId,
-      accessContext(req),
+      getAccessContext(req),
       { requireAuthMessage: true },
     );
     res.json(tournament);
@@ -109,7 +102,7 @@ export async function getLeaderboard(
     const tournamentId = getParam(req, "tournamentId");
     const result = await tournamentService.getLeaderboard(
       tournamentId,
-      accessContext(req),
+      getAccessContext(req),
     );
     res.json(result);
   } catch (err) {
@@ -126,7 +119,7 @@ export async function getEntries(
     const tournamentId = getParam(req, "tournamentId");
     const entries = await tournamentService.getEntries(
       tournamentId,
-      accessContext(req),
+      getAccessContext(req),
     );
     res.json(entries);
   } catch (err) {
@@ -143,7 +136,7 @@ export async function getPlayerStatuses(
     const tournamentId = getParam(req, "tournamentId");
     const statuses = await tournamentService.getPlayerStatuses(
       tournamentId,
-      accessContext(req),
+      getAccessContext(req),
     );
     res.json(statuses);
   } catch (err) {

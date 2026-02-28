@@ -6,19 +6,11 @@ export async function withMongoTransaction<T>(
   const session = await mongoose.startSession();
 
   try {
-    let output: T | undefined;
-    let hasReturned = false;
-
+    let result!: T;
     await session.withTransaction(async () => {
-      output = await work(session);
-      hasReturned = true;
+      result = await work(session);
     });
-
-    if (!hasReturned) {
-      throw new Error("Transaction completed without a result");
-    }
-
-    return output as T;
+    return result;
   } finally {
     await session.endSession();
   }

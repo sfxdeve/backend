@@ -30,9 +30,7 @@ export async function createMatch(
   input: Record<string, unknown>,
 ): Promise<Record<string, unknown>> {
   const match = await Match.create(input);
-  return match.toObject
-    ? match.toObject()
-    : (match as unknown as Record<string, unknown>);
+  return match.toObject();
 }
 
 export async function updateMatch(
@@ -43,9 +41,7 @@ export async function updateMatch(
     new: true,
   });
   if (!match) throw new AppError("NOT_FOUND", "Match not found");
-  return match.toObject
-    ? match.toObject()
-    : (match as unknown as Record<string, unknown>);
+  return match.toObject();
 }
 
 export interface SubmitResultInput {
@@ -73,8 +69,13 @@ export async function submitResult(
 
   const homeWins = sets.filter((s) => s.home > s.away).length;
   const awayWins = sets.filter((s) => s.away > s.home).length;
+  const ties = sets.filter((s) => s.home === s.away).length;
+  const valid =
+    (homeWins === 2 || awayWins === 2) &&
+    homeWins + awayWins === sets.length &&
+    ties === 0;
 
-  if (homeWins < 2 && awayWins < 2) {
+  if (!valid) {
     throw new AppError(
       "BAD_REQUEST",
       "Sets must produce a valid 2-0 or 2-1 result",

@@ -10,27 +10,15 @@ export async function creditFromPurchase(
   paymentIntentId: string,
   session: ClientSession,
 ) {
-  const wallet = await Wallet.findOneAndUpdate(
+  const w = await Wallet.findOneAndUpdate(
     { userId },
-    { $inc: { balance: amount, totalPurchased: amount } },
-    { new: true, session },
+    {
+      $inc: { balance: amount, totalPurchased: amount },
+      $setOnInsert: { totalSpent: 0 },
+    },
+    { upsert: true, new: true, session },
   );
-  let w = wallet;
-  if (!w) {
-    w = await Wallet.findOneAndUpdate(
-      { userId },
-      {
-        $setOnInsert: {
-          userId,
-          balance: amount,
-          totalPurchased: amount,
-          totalSpent: 0,
-        },
-      },
-      { upsert: true, new: true, session },
-    );
-    if (!w) throw new AppError("INTERNAL_SERVER_ERROR", "Wallet update failed");
-  }
+  if (!w) throw new AppError("INTERNAL_SERVER_ERROR", "Wallet update failed");
 
   await CreditTransaction.create(
     [
@@ -39,7 +27,7 @@ export async function creditFromPurchase(
         amount,
         type: "PURCHASE",
         source: "STRIPE",
-        metadata: { paymentIntentId: paymentIntentId },
+        metadata: { paymentIntentId },
         balanceAfter: w.balance,
       },
     ],
@@ -51,24 +39,11 @@ export async function creditFromPurchase(
 const RECENT_TRANSACTIONS_LIMIT = 50;
 
 export async function getOrCreateWallet(userId: string) {
-  let wallet = await Wallet.findOne({ userId }).lean();
-  if (!wallet) {
-    wallet = (
-      await Wallet.findOneAndUpdate(
-        { userId },
-        {
-          $setOnInsert: {
-            userId,
-            balance: 0,
-            totalPurchased: 0,
-            totalSpent: 0,
-          },
-        },
-        { upsert: true, new: true },
-      )
-    ).toObject();
-  }
-  return wallet;
+  return Wallet.findOneAndUpdate(
+    { userId },
+    { $setOnInsert: { userId, balance: 0, totalPurchased: 0, totalSpent: 0 } },
+    { upsert: true, new: true },
+  ).lean();
 }
 
 export async function getWalletWithTransactions(userId: string) {
@@ -86,18 +61,13 @@ export async function spend(userId: string, amount: number, reason: string) {
   }
 
   return withMongoTransaction(async (session) => {
-    await Wallet.findOneAndUpdate(
-      { userId },
-      {
-        $setOnInsert: { userId, balance: 0, totalPurchased: 0, totalSpent: 0 },
-      },
-      { upsert: true, session },
-    );
-
     const wallet = await Wallet.findOneAndUpdate(
       { userId },
-      { $inc: { balance: -amount, totalSpent: amount } },
-      { new: true, session },
+      {
+        $inc: { balance: -amount, totalSpent: amount },
+        $setOnInsert: { totalPurchased: 0 },
+      },
+      { upsert: true, new: true, session },
     );
     if (!wallet || wallet.balance < 0) {
       throw new AppError("BAD_REQUEST", "Insufficient balance");
@@ -131,28 +101,15 @@ export async function adjust(
   }
 
   const run = async (s: ClientSession) => {
-    const wallet = await Wallet.findOneAndUpdate(
+    const w = await Wallet.findOneAndUpdate(
       { userId },
-      { $inc: { balance: amount } },
-      { new: true, session: s },
+      {
+        $inc: { balance: amount },
+        $setOnInsert: { totalPurchased: 0, totalSpent: 0 },
+      },
+      { upsert: true, new: true, session: s },
     );
-    let w = wallet;
-    if (!w) {
-      w = await Wallet.findOneAndUpdate(
-        { userId },
-        {
-          $setOnInsert: {
-            userId,
-            balance: amount,
-            totalPurchased: 0,
-            totalSpent: 0,
-          },
-        },
-        { upsert: true, new: true, session: s },
-      );
-      if (!w)
-        throw new AppError("INTERNAL_SERVER_ERROR", "Wallet creation failed");
-    }
+    if (!w) throw new AppError("INTERNAL_SERVER_ERROR", "Wallet update failed");
     if (w.balance < 0) {
       throw new AppError(
         "BAD_REQUEST",

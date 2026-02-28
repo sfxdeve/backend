@@ -74,22 +74,11 @@ export async function bootstrap(): Promise<{
     res.json({ status: "ok" });
   });
 
-  app.get("/ready", async (_req: Request, res: Response) => {
+  app.get("/ready", (_req: Request, res: Response) => {
     if (!isDbConnected()) {
       res.status(503).json({ status: "unavailable", reason: "db" });
       return;
     }
-
-    try {
-      const stripeModule = await import("stripe");
-      const Stripe = stripeModule.default;
-      const stripe = new Stripe(env.STRIPE_SECRET_KEY);
-      await stripe.paymentIntents.list({ limit: 1 });
-    } catch {
-      res.status(503).json({ status: "unavailable", reason: "stripe" });
-      return;
-    }
-
     res.json({ status: "ok" });
   });
 

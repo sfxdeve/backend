@@ -1,18 +1,11 @@
 import { z } from "zod";
+import { MatchPhase, PoolRound } from "../models/enums.js";
 
 export const createMatchBody = z.object({
   tournamentId: z.string().min(1),
-  phase: z.enum([
-    "QUALIFICATION",
-    "POOL",
-    "MAIN_R12",
-    "MAIN_QF",
-    "MAIN_SF",
-    "MAIN_FINAL",
-    "MAIN_3RD",
-  ]),
+  phase: z.enum([...MatchPhase]),
   poolGroupId: z.string().optional(),
-  poolRound: z.enum(["INITIAL", "WINNERS", "LOSERS"]).optional(),
+  poolRound: z.enum([...PoolRound]).optional(),
   bracketSlot: z.string().optional(),
   homeFedFrom: z.string().optional(),
   awayFedFrom: z.string().optional(),
@@ -46,15 +39,5 @@ export const matchIdParam = z.object({
 
 export const matchListQuery = z.object({
   tournamentId: z.string().min(1),
-  phase: z
-    .enum([
-      "QUALIFICATION",
-      "POOL",
-      "MAIN_R12",
-      "MAIN_QF",
-      "MAIN_SF",
-      "MAIN_FINAL",
-      "MAIN_3RD",
-    ])
-    .optional(),
+  phase: z.enum([...MatchPhase]).optional(),
 });

@@ -64,7 +64,5 @@ export async function saveTeam(
     { upsert: true, new: true },
   );
   if (!team) throw new AppError("NOT_FOUND", "Team not found");
-  return team.toObject
-    ? team.toObject()
-    : (team as unknown as Record<string, unknown>);
+  return team.toObject();
 }

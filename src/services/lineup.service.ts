@@ -103,7 +103,5 @@ export async function saveLineup(
     { upsert: true, new: true },
   );
   if (!lineup) throw new AppError("NOT_FOUND", "Lineup not found");
-  return lineup.toObject
-    ? lineup.toObject()
-    : (lineup as unknown as Record<string, unknown>);
+  return lineup.toObject();
 }

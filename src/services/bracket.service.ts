@@ -160,7 +160,7 @@ async function checkAllPoolsDone(
 ): Promise<void> {
   const pools = await PoolGroup.find({ tournamentId }).session(session).lean();
   const allDone = pools.every((p) => p.slots.every((s) => s.finalRank != null));
-  if (!allDone || pools.length !== 4) return;
+  if (!allDone) return;
 
   // Collect rankings
   const byRank = new Map<number, Types.ObjectId[]>();
