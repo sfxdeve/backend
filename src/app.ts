@@ -20,25 +20,6 @@ import {
 } from "./middlewares/rate-limit.js";
 import { notFoundHandler, errorHandler } from "./middlewares/error-handler.js";
 
-import * as paymentsController from "./controllers/payments.controller.js";
-import adminRoutes from "./routes/admin.js";
-import authRoutes from "./routes/auth.js";
-import bracketsRoutes from "./routes/brackets.js";
-import leaguesRoutes from "./routes/leagues.js";
-import lineupsRoutes from "./routes/lineups.js";
-import matchesRoutes from "./routes/matches.js";
-import paymentsRoutes from "./routes/payments.js";
-import playersRoutes from "./routes/players.js";
-import pairsRoutes from "./routes/pairs.js";
-import poolsRoutes from "./routes/pools.js";
-import scoringRoutes from "./routes/scoring.js";
-import seasonsRoutes from "./routes/seasons.js";
-import notificationsRoutes from "./routes/notifications.js";
-import teamsRoutes from "./routes/teams.js";
-import tournamentsRoutes from "./routes/tournaments.js";
-import usersRoutes from "./routes/users.js";
-import walletRoutes from "./routes/wallet.js";
-
 export async function bootstrap(): Promise<{
   app: Express;
   shutdown: () => Promise<void>;
@@ -64,13 +45,6 @@ export async function bootstrap(): Promise<{
   );
 
   // Stripe webhook raw body (must be before express.json)
-  app.post(
-    "/api/payments/stripe-webhook",
-    stripeWebhookRateLimiter,
-    express.raw({ type: "application/json", limit: "10mb" }),
-    (req: Request, res: Response, next: express.NextFunction) =>
-      paymentsController.stripeWebhook(req, res, next),
-  );
 
   // Basic health and readiness probes
   app.get("/health", (_req: Request, res: Response) => {
@@ -108,24 +82,7 @@ export async function bootstrap(): Promise<{
   // Rate limiting
   app.use(defaultRateLimiter);
 
-  // API routes (tournament-scoped before base /api/tournaments)
-  app.use("/api/admin", adminRoutes);
-  app.use("/api/auth", authRoutes);
-  app.use("/api/brackets", bracketsRoutes);
-  app.use("/api/leagues", leaguesRoutes);
-  app.use("/api/matches", matchesRoutes);
-  app.use("/api/payments", paymentsRoutes);
-  app.use("/api/players", playersRoutes);
-  app.use("/api/pairs", pairsRoutes);
-  app.use("/api/pools", poolsRoutes);
-  app.use("/api/scoring", scoringRoutes);
-  app.use("/api/seasons", seasonsRoutes);
-  app.use("/api/tournaments/:tournamentId/team", teamsRoutes);
-  app.use("/api/tournaments/:tournamentId/lineup", lineupsRoutes);
-  app.use("/api/tournaments", tournamentsRoutes);
-  app.use("/api/users/notifications", notificationsRoutes);
-  app.use("/api/users", usersRoutes);
-  app.use("/api/wallet", walletRoutes);
+  // API routes
 
   // Error handling (must be last)
   app.use(notFoundHandler);

@@ -2,8 +2,6 @@ import "@dotenvx/dotenvx/config";
 import { env } from "./lib/env.js";
 import { logger } from "./lib/logger.js";
 import { bootstrap } from "./app.js";
-import { initWs } from "./ws/index.js";
-import { startLineupLockJob } from "./jobs/lineup-lock.job.js";
 
 async function run(): Promise<void> {
   const { app, shutdown } = await bootstrap();
@@ -11,9 +9,6 @@ async function run(): Promise<void> {
   const server = app.listen(env.PORT, () => {
     logger.info({ port: env.PORT }, "FantaBeach backend started");
   });
-
-  initWs(server);
-  startLineupLockJob();
 
   const handleSignal = (signal: NodeJS.Signals) => {
     logger.info({ signal }, "Shutdown signal received");

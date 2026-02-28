@@ -1,56 +1,88 @@
-/**
- * Shared enums for model fields. Each enum is exported as const object + type.
- */
+export enum Role {
+  USER = "USER",
+  ADMIN = "ADMIN",
+}
 
-// Auth
-export const Role = {
-  USER: "USER",
-  ADMIN: "ADMIN",
-} as const;
-export type Role = (typeof Role)[keyof typeof Role];
+export enum OtpPurpose {
+  VERIFY_EMAIL = "VERIFY_EMAIL",
+  RESET_PASSWORD = "RESET_PASSWORD",
+}
 
-export const OtpPurpose = {
-  VERIFY_EMAIL: "VERIFY_EMAIL",
-  RESET_PASSWORD: "RESET_PASSWORD",
-} as const;
-export type OtpPurpose = (typeof OtpPurpose)[keyof typeof OtpPurpose];
+export enum Gender {
+  M = "M",
+  F = "F",
+}
 
-// Competition
-export const Gender = {
-  M: "M",
-  W: "W",
-} as const;
-export type Gender = (typeof Gender)[keyof typeof Gender];
+// ── Real World ───────────────────────────────────────────────
 
-export const TournamentStatus = {
-  UPCOMING: "UPCOMING",
-  LIVE: "LIVE",
-  COMPLETED: "COMPLETED",
-} as const;
-export type TournamentStatus =
-  (typeof TournamentStatus)[keyof typeof TournamentStatus];
+export enum TournamentStatus {
+  UPCOMING = "UPCOMING",
+  REGISTRATION_OPEN = "REGISTRATION_OPEN",
+  LOCKED = "LOCKED",
+  ONGOING = "ONGOING",
+  COMPLETED = "COMPLETED",
+}
 
-export const MatchStatus = {
-  SCHEDULED: "SCHEDULED",
-  LIVE: "LIVE",
-  COMPLETED: "COMPLETED",
-} as const;
-export type MatchStatus = (typeof MatchStatus)[keyof typeof MatchStatus];
+export enum EntryStatus {
+  DIRECT = "DIRECT",
+  QUALIFICATION = "QUALIFICATION",
+  RESERVE_1 = "RESERVE_1",
+  RESERVE_2 = "RESERVE_2",
+  RESERVE_3 = "RESERVE_3",
+}
 
-// Payments
-export const CreditTransactionType = {
-  PURCHASE: "PURCHASE",
-  SPEND: "SPEND",
-  BONUS: "BONUS",
-  REFUND: "REFUND",
-} as const;
-export type CreditTransactionType =
-  (typeof CreditTransactionType)[keyof typeof CreditTransactionType];
+export enum MatchRound {
+  QUALIFICATION_R1 = "QUALIFICATION_R1",
+  QUALIFICATION_R2 = "QUALIFICATION_R2",
+  POOL = "POOL",
+  R12 = "R12",
+  QF = "QF",
+  SF = "SF",
+  FINAL = "FINAL",
+  THIRD_PLACE = "THIRD_PLACE",
+}
 
-export const CreditTransactionSource = {
-  STRIPE: "STRIPE",
-  ADMIN: "ADMIN",
-  SYSTEM: "SYSTEM",
-} as const;
-export type CreditTransactionSource =
-  (typeof CreditTransactionSource)[keyof typeof CreditTransactionSource];
+export enum MatchStatus {
+  SCHEDULED = "SCHEDULED",
+  IN_PROGRESS = "IN_PROGRESS",
+  COMPLETED = "COMPLETED",
+  CORRECTED = "CORRECTED",
+}
+
+// ── Fantasy World ────────────────────────────────────────────
+
+export enum LeagueType {
+  PUBLIC = "PUBLIC",
+  PRIVATE = "PRIVATE",
+}
+
+export enum LeagueStatus {
+  OPEN = "OPEN",
+  ONGOING = "ONGOING",
+  COMPLETED = "COMPLETED",
+}
+
+export enum RankingMode {
+  OVERALL = "OVERALL",
+  HEAD_TO_HEAD = "HEAD_TO_HEAD",
+}
+
+export enum LineupRole {
+  STARTER = "STARTER",
+  BENCH = "BENCH",
+}
+
+// ── Credits & Payments ───────────────────────────────────────
+
+export enum CreditTransactionType {
+  PURCHASE = "PURCHASE",
+  SPEND = "SPEND",
+  BONUS = "BONUS",
+  REFUND = "REFUND",
+}
+
+export enum CreditTransactionSource {
+  STRIPE = "STRIPE",
+  ADMIN = "ADMIN",
+  SYSTEM = "SYSTEM",
+}

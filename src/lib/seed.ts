@@ -1,4 +1,4 @@
-import { User } from "../models/User.js";
+import { User } from "../models/Auth.js";
 import { CreditPack } from "../models/CreditPack.js";
 import { hashSecret } from "./hash.js";
 import { env } from "./env.js";

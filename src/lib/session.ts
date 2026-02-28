@@ -1,4 +1,4 @@
-import { Session } from "../models/Session.js";
+import { Session } from "../models/Auth.js";
 
 export async function createSession(
   userId: string,

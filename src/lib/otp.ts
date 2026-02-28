@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { OTP } from "../models/OTP.js";
+import { Otp } from "../models/Auth.js";
 import { hashSecret, compareSecret } from "./hash.js";
 import type { OtpPurpose } from "../models/enums.js";
 
@@ -15,8 +15,8 @@ export async function createOtp(
   const hash = await hashSecret(code);
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-  await OTP.deleteMany({ userId, purpose });
-  await OTP.create({ userId, purpose, hash, expiresAt });
+  await Otp.deleteMany({ userId, purpose });
+  await Otp.create({ userId, purpose, hash, expiresAt });
 
   return code;
 }
@@ -26,7 +26,7 @@ export async function verifyOtp(
   purpose: OtpPurpose,
   code: string,
 ): Promise<boolean> {
-  const record = await OTP.findOne({
+  const record = await Otp.findOne({
     userId,
     purpose,
     expiresAt: { $gt: new Date() },
