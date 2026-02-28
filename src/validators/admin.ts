@@ -1,14 +1,6 @@
 import { z } from "zod";
+import { paginationSchema } from "../lib/pagination.js";
 import { AuditLogType } from "../models/AuditLog.js";
-
-export const adminLogsQuery = z.object({
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
-  type: z.enum(Object.values(AuditLogType) as [string, ...string[]]).optional(),
-  tournamentId: z.string().optional(),
-  from: z.coerce.date().optional(),
-  to: z.coerce.date().optional(),
-});
 
 export const priceParamsBody = z.object({
   tournamentId: z.string().min(1),
@@ -16,3 +8,15 @@ export const priceParamsBody = z.object({
   priceFloor: z.number().min(0).optional(),
   priceCap: z.number().min(0).optional(),
 });
+
+export const adminLogsQuery = paginationSchema.merge(
+  z.object({
+    type: z.enum(Object.values(AuditLogType) as [string, ...string[]]).optional(),
+    tournamentId: z.string().optional(),
+    from: z.coerce.date().optional(),
+    to: z.coerce.date().optional(),
+  }),
+);
+
+export type PriceParamsBody = z.infer<typeof priceParamsBody>;
+export type AdminLogsQuery = z.infer<typeof adminLogsQuery>;

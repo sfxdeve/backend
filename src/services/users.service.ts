@@ -1,10 +1,10 @@
-import { User } from "../models/User.js";
 import { AuditLog } from "../models/AuditLog.js";
+import { User } from "../models/User.js";
 import { AppError } from "../lib/errors.js";
-import { hashSecret, compareSecret } from "../lib/hash.js";
-import { revokeAllUserSessions } from "../lib/session.js";
+import { compareSecret, hashSecret } from "../lib/hash.js";
 import { paginationOptions, paginationMeta } from "../lib/pagination.js";
 import type { PaginationQuery } from "../lib/pagination.js";
+import { revokeAllUserSessions } from "../lib/session.js";
 
 export async function getProfile(userId: string) {
   const user = await User.findById(userId).select("-passwordHash").lean();

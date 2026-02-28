@@ -1,7 +1,7 @@
 import { Notification, NotificationType } from "../models/Notification.js";
+import { AppError } from "../lib/errors.js";
 import { paginationOptions, paginationMeta } from "../lib/pagination.js";
 import type { PaginationQuery } from "../lib/pagination.js";
-import { AppError } from "../lib/errors.js";
 
 export async function createNotification(
   userId: string,

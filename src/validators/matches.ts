@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { paginationSchema } from "../lib/pagination.js";
 import { MatchPhase, MatchResult } from "../models/enums.js";
 
 const setSchema = z.object({
@@ -37,10 +38,14 @@ export const matchIdParam = z.object({
   id: z.string().min(1),
 });
 
-export const listMatchesQuery = z.object({
-  tournamentId: z.string().min(1),
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
-  phase: z.string().optional(),
-  status: z.string().optional(),
-});
+export const listMatchesQuery = paginationSchema.merge(
+  z.object({
+    tournamentId: z.string().min(1),
+    phase: z.string().optional(),
+    status: z.string().optional(),
+  }),
+);
+
+export type CreateMatchBody = z.infer<typeof createMatchBody>;
+export type UpdateScoreBody = z.infer<typeof updateScoreBody>;
+export type ListMatchesQuery = z.infer<typeof listMatchesQuery>;

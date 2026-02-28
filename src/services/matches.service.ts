@@ -1,18 +1,18 @@
 import crypto from "node:crypto";
 import mongoose from "mongoose";
+import { AuditLog, AuditLogType } from "../models/AuditLog.js";
 import { Match } from "../models/Match.js";
 import { Tournament } from "../models/Tournament.js";
-import { AuditLog, AuditLogType } from "../models/AuditLog.js";
 import { AppError } from "../lib/errors.js";
 import { paginationOptions, paginationMeta } from "../lib/pagination.js";
 import type { PaginationQuery } from "../lib/pagination.js";
+import { appEmitter } from "../events/emitter.js";
 import {
   MatchPhase,
-  MatchStatus,
   MatchResult,
+  MatchStatus,
   TournamentStatus,
 } from "../models/enums.js";
-import { appEmitter } from "../events/emitter.js";
 
 export function computeMatchId(
   tournamentId: string,

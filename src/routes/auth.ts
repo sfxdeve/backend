@@ -4,12 +4,12 @@ import { requireAuth } from "../middlewares/auth.js";
 import { authRateLimiter, otpRateLimiter } from "../middlewares/rate-limit.js";
 import * as authController from "../controllers/auth.controller.js";
 import {
-  registerBody,
-  loginBody,
-  verifyEmailBody,
   forgotPasswordBody,
-  resetPasswordBody,
+  loginBody,
   refreshBody,
+  registerBody,
+  resetPasswordBody,
+  verifyEmailBody,
 } from "../validators/auth.js";
 
 const router = Router();

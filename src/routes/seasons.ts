@@ -4,9 +4,9 @@ import { requireAuth, requireAdmin } from "../middlewares/auth.js";
 import * as seasonsController from "../controllers/seasons.controller.js";
 import {
   createSeasonBody,
-  updateSeasonBody,
-  seasonIdParam,
   listSeasonsQuery,
+  seasonIdParam,
+  updateSeasonBody,
 } from "../validators/seasons.js";
 
 const router = Router();

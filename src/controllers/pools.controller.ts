@@ -1,6 +1,11 @@
 import type { Request, Response, NextFunction } from "express";
 import { param } from "../lib/params.js";
 import * as poolsService from "../services/pools.service.js";
+import type {
+  AssignPairBody,
+  CreateGroupBody,
+  TournamentIdQuery,
+} from "../validators/pools.js";
 
 export async function list(
   req: Request,
@@ -8,7 +13,7 @@ export async function list(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { tournamentId } = req.query as { tournamentId: string };
+    const { tournamentId } = req.query as TournamentIdQuery;
     const result = await poolsService.listGroups(tournamentId);
     res.json(result);
   } catch (e) {
@@ -22,8 +27,8 @@ export async function createGroup(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { tournamentId } = req.query as { tournamentId: string };
-    const result = await poolsService.createGroup(tournamentId, req.body);
+    const { tournamentId } = req.query as TournamentIdQuery;
+    const result = await poolsService.createGroup(tournamentId, req.body as CreateGroupBody);
     res.status(201).json(result);
   } catch (e) {
     next(e);
@@ -37,7 +42,7 @@ export async function assignPair(
 ): Promise<void> {
   try {
     const groupId = param(req, "groupId");
-    const { pairId } = req.body as { pairId: string };
+    const { pairId } = req.body as AssignPairBody;
     await poolsService.assignPair(groupId, pairId);
     res.status(204).send();
   } catch (e) {

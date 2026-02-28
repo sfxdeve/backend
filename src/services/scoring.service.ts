@@ -1,6 +1,6 @@
-import { PlayerScore } from "../models/PlayerScore.js";
 import { LeagueMember } from "../models/LeagueMember.js";
 import { Match } from "../models/Match.js";
+import { PlayerScore } from "../models/PlayerScore.js";
 import { AppError } from "../lib/errors.js";
 import { appEmitter } from "../events/emitter.js";
 

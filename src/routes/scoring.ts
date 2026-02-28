@@ -2,7 +2,10 @@ import { Router } from "express";
 import { validateRequest } from "../middlewares/validate-request.js";
 import { requireAuth } from "../middlewares/auth.js";
 import * as scoringController from "../controllers/scoring.controller.js";
-import { playerScoresQuery, leagueIdParam } from "../validators/scoring.js";
+import {
+  leagueIdParam,
+  playerScoresQuery,
+} from "../validators/scoring.js";
 
 const router = Router();
 

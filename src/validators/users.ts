@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { paginationSchema } from "../lib/pagination.js";
+
+export const listNotificationsQuery = paginationSchema;
 
 export const updateProfileBody = z.object({
   name: z.string().min(1).optional(),
@@ -21,17 +24,24 @@ export const notificationIdParam = z.object({
   id: z.string().min(1),
 });
 
-export const listUsersQuery = z.object({
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
-  search: z.string().optional(),
-});
+export const listUsersQuery = paginationSchema.merge(
+  z.object({
+    search: z.string().optional(),
+  }),
+);
 
-export const auditLogQuery = z.object({
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
-  type: z.string().optional(),
-  tournamentId: z.string().optional(),
-  from: z.coerce.date().optional(),
-  to: z.coerce.date().optional(),
-});
+export const auditLogQuery = paginationSchema.merge(
+  z.object({
+    type: z.string().optional(),
+    tournamentId: z.string().optional(),
+    from: z.coerce.date().optional(),
+    to: z.coerce.date().optional(),
+  }),
+);
+
+export type ListNotificationsQuery = z.infer<typeof listNotificationsQuery>;
+export type UpdateProfileBody = z.infer<typeof updateProfileBody>;
+export type ChangePasswordBody = z.infer<typeof changePasswordBody>;
+export type BlockUserBody = z.infer<typeof blockUserBody>;
+export type ListUsersQuery = z.infer<typeof listUsersQuery>;
+export type AuditLogQuery = z.infer<typeof auditLogQuery>;

@@ -1,13 +1,6 @@
-import { Pair } from "../models/Pair.js";
 import { Match } from "../models/Match.js";
+import { Pair } from "../models/Pair.js";
 import { AppError } from "../lib/errors.js";
-
-export async function listForTournament(tournamentId: string) {
-  return Pair.find({ tournamentId })
-    .populate("player1Id")
-    .populate("player2Id")
-    .lean();
-}
 
 export interface CreatePairBody {
   player1Id: string;
@@ -31,4 +24,11 @@ export async function deletePair(pairId: string): Promise<void> {
   if (played)
     throw new AppError("BAD_REQUEST", "Cannot delete pair with played matches");
   await Pair.deleteOne({ _id: pairId });
+}
+
+export async function listForTournament(tournamentId: string) {
+  return Pair.find({ tournamentId })
+    .populate("player1Id")
+    .populate("player2Id")
+    .lean();
 }

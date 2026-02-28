@@ -1,4 +1,4 @@
-import type { Request, Response, NextFunction } from "express";
+import type { NextFunction, Request, Response } from "express";
 import expressRateLimit from "express-rate-limit";
 import { AppError } from "../lib/errors.js";
 
@@ -15,16 +15,16 @@ function rateLimitHandler(
   );
 }
 
-export const defaultRateLimiter = expressRateLimit({
-  limit: 120,
+export const authRateLimiter = expressRateLimit({
+  limit: 20,
   windowMs: 60 * 1000,
   legacyHeaders: false,
   standardHeaders: true,
   handler: rateLimitHandler,
 });
 
-export const authRateLimiter = expressRateLimit({
-  limit: 20,
+export const defaultRateLimiter = expressRateLimit({
+  limit: 120,
   windowMs: 60 * 1000,
   legacyHeaders: false,
   standardHeaders: true,

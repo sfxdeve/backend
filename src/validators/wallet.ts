@@ -1,6 +1,6 @@
 import { z } from "zod";
+import { paginationSchema } from "../lib/pagination.js";
 
-export const listTransactionsQuery = z.object({
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
-});
+export const listTransactionsQuery = paginationSchema;
+
+export type ListTransactionsQuery = z.infer<typeof listTransactionsQuery>;

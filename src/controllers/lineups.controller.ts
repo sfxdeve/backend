@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { param } from "../lib/params.js";
 import * as lineupsService from "../services/lineups.service.js";
+import type { SetLineupBody } from "../validators/lineups.js";
 
 export async function getLineup(
   req: Request,
@@ -25,7 +26,7 @@ export async function setLineup(
   try {
     const tournamentId = param(req, "tournamentId");
     const userId = req.auth!.userId;
-    await lineupsService.setLineup(userId, tournamentId, req.body);
+    await lineupsService.setLineup(userId, tournamentId, req.body as SetLineupBody);
     res.status(204).send();
   } catch (e) {
     next(e);

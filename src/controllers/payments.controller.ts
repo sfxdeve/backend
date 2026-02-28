@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import * as paymentsService from "../services/payments.service.js";
+import type { CreateCheckoutBody } from "../validators/payments.js";
 
 export async function stripeWebhook(
   req: Request,
@@ -27,7 +28,7 @@ export async function createCheckout(
 ): Promise<void> {
   try {
     const userId = req.auth!.userId;
-    const { packId } = req.body;
+    const { packId } = req.body as CreateCheckoutBody;
     const result = await paymentsService.createCheckoutSession(userId, packId);
     res.json(result);
   } catch (e) {

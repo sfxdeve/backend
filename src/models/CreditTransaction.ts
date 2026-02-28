@@ -1,5 +1,8 @@
 import mongoose from "mongoose";
-import { CreditTransactionType, CreditTransactionSource } from "./enums.js";
+import {
+  CreditTransactionSource,
+  CreditTransactionType,
+} from "./enums.js";
 
 const creditTransactionSchema = new mongoose.Schema(
   {

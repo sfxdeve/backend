@@ -1,7 +1,7 @@
-import type { Request, Response, NextFunction } from "express";
+import type { NextFunction, Request, Response } from "express";
+import { AppError } from "../lib/errors.js";
 import { extractBearerToken, verifyAccessToken } from "../lib/jwt.js";
 import { validateSession } from "../lib/session.js";
-import { AppError } from "../lib/errors.js";
 
 export async function requireAuth(
   req: Request,

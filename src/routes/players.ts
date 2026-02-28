@@ -3,11 +3,11 @@ import { validateRequest } from "../middlewares/validate-request.js";
 import { requireAuth, requireAdmin } from "../middlewares/auth.js";
 import * as playersController from "../controllers/players.controller.js";
 import {
-  createPlayerBody,
-  updatePlayerBody,
-  playerIdParam,
-  listPlayersQuery,
   adjustPriceBody,
+  createPlayerBody,
+  listPlayersQuery,
+  playerIdParam,
+  updatePlayerBody,
 } from "../validators/players.js";
 
 const router = Router();

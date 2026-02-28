@@ -2,7 +2,10 @@ import { Router } from "express";
 import { validateRequest } from "../middlewares/validate-request.js";
 import { requireAdmin } from "../middlewares/auth.js";
 import * as adminController from "../controllers/admin.controller.js";
-import { adminLogsQuery, priceParamsBody } from "../validators/admin.js";
+import {
+  adminLogsQuery,
+  priceParamsBody,
+} from "../validators/admin.js";
 
 const router = Router();
 

@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { param } from "../lib/params.js";
 import * as teamsService from "../services/teams.service.js";
+import type { SetTeamBody } from "../validators/teams.js";
 
 export async function getTeam(
   req: Request,
@@ -25,7 +26,7 @@ export async function setTeam(
   try {
     const tournamentId = param(req, "tournamentId");
     const userId = req.auth!.userId;
-    await teamsService.createOrUpdate(userId, tournamentId, req.body);
+    await teamsService.createOrUpdate(userId, tournamentId, req.body as SetTeamBody);
     res.status(204).send();
   } catch (e) {
     next(e);

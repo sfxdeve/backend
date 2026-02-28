@@ -3,11 +3,11 @@ import { CreditPack } from "../models/CreditPack.js";
 import { ProcessedPayment } from "../models/ProcessedPayment.js";
 import { AppError } from "../lib/errors.js";
 import { env } from "../lib/env.js";
-import * as walletService from "./wallet.service.js";
 import {
-  CreditTransactionType,
   CreditTransactionSource,
+  CreditTransactionType,
 } from "../models/enums.js";
+import * as walletService from "./wallet.service.js";
 
 const stripe = new Stripe(env.STRIPE_SECRET_KEY);
 

@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { param } from "../lib/params.js";
 import * as tournamentsService from "../services/tournaments.service.js";
-import type { ListTournamentsQuery } from "../services/tournaments.service.js";
+import type { ListTournamentsQuery } from "../validators/tournaments.js";
 
 export async function list(
   req: Request,

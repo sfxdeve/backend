@@ -1,5 +1,5 @@
 import mongoose, { type Types } from "mongoose";
-import { Gender, TournamentStatus, MatchPhase } from "./enums.js";
+import { Gender, MatchPhase, TournamentStatus } from "./enums.js";
 
 interface IScoringTable {
   QUALIFICATION: number;

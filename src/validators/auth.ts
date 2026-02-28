@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+const sixDigitCode = z
+  .string()
+  .regex(/^\d{6}$/, "Code must be exactly 6 digits");
+
 export const registerBody = z.object({
   email: z.email(),
   name: z.string().min(1),
@@ -10,10 +14,6 @@ export const loginBody = z.object({
   email: z.email(),
   password: z.string().min(1),
 });
-
-const sixDigitCode = z
-  .string()
-  .regex(/^\d{6}$/, "Code must be exactly 6 digits");
 
 export const verifyEmailBody = z.object({
   userId: z.string().min(1),
@@ -33,3 +33,10 @@ export const resetPasswordBody = z.object({
 export const refreshBody = z.object({
   refreshToken: z.string().min(1),
 });
+
+export type RegisterBody = z.infer<typeof registerBody>;
+export type LoginBody = z.infer<typeof loginBody>;
+export type VerifyEmailBody = z.infer<typeof verifyEmailBody>;
+export type ForgotPasswordBody = z.infer<typeof forgotPasswordBody>;
+export type ResetPasswordBody = z.infer<typeof resetPasswordBody>;
+export type RefreshBody = z.infer<typeof refreshBody>;

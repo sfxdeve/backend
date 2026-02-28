@@ -4,8 +4,8 @@ import { requireAuth, requireAdmin } from "../middlewares/auth.js";
 import * as pairsController from "../controllers/pairs.controller.js";
 import {
   createPairBody,
-  tournamentIdQuery,
   pairIdParam,
+  tournamentIdQuery,
 } from "../validators/pairs.js";
 
 const router = Router();

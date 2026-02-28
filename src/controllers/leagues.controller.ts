@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { param } from "../lib/params.js";
 import * as leaguesService from "../services/leagues.service.js";
-import type { ListLeaguesQuery } from "../services/leagues.service.js";
+import type { JoinLeagueBody, ListLeaguesQuery } from "../validators/leagues.js";
 
 export async function list(
   req: Request,
@@ -63,7 +63,7 @@ export async function join(
 ): Promise<void> {
   try {
     const userId = req.auth!.userId;
-    const { inviteCode } = req.body as { inviteCode?: string };
+    const { inviteCode } = req.body as JoinLeagueBody;
     await leaguesService.join(userId, param(req, "id"), inviteCode);
     res.status(204).send();
   } catch (e) {

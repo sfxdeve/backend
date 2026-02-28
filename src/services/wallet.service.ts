@@ -1,22 +1,12 @@
-import { Wallet } from "../models/Wallet.js";
 import { CreditTransaction } from "../models/CreditTransaction.js";
+import { Wallet } from "../models/Wallet.js";
 import { AppError } from "../lib/errors.js";
-import {
-  CreditTransactionType,
-  CreditTransactionSource,
-} from "../models/enums.js";
 import { paginationOptions, paginationMeta } from "../lib/pagination.js";
 import type { PaginationQuery } from "../lib/pagination.js";
-
-export async function getWallet(userId: string) {
-  const wallet = await Wallet.findOne({ userId }).lean();
-  if (!wallet) throw new AppError("NOT_FOUND", "Wallet not found");
-  const recent = await CreditTransaction.find({ walletId: wallet._id })
-    .sort({ createdAt: -1 })
-    .limit(10)
-    .lean();
-  return { ...wallet, recentTransactions: recent };
-}
+import {
+  CreditTransactionSource,
+  CreditTransactionType,
+} from "../models/enums.js";
 
 export async function credit(
   userId: string,
@@ -93,4 +83,14 @@ export async function getTransactions(userId: string, query: PaginationQuery) {
     CreditTransaction.countDocuments({ walletId: wallet._id }),
   ]);
   return { items, meta: paginationMeta(total, query) };
+}
+
+export async function getWallet(userId: string) {
+  const wallet = await Wallet.findOne({ userId }).lean();
+  if (!wallet) throw new AppError("NOT_FOUND", "Wallet not found");
+  const recent = await CreditTransaction.find({ walletId: wallet._id })
+    .sort({ createdAt: -1 })
+    .limit(10)
+    .lean();
+  return { ...wallet, recentTransactions: recent };
 }

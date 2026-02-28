@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { param } from "../lib/params.js";
 import * as bracketsService from "../services/brackets.service.js";
+import type { TournamentIdQuery } from "../validators/brackets.js";
 
 export async function getForTournament(
   req: Request,
@@ -8,7 +9,7 @@ export async function getForTournament(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { tournamentId } = req.query as { tournamentId: string };
+    const { tournamentId } = req.query as TournamentIdQuery;
     const result = await bracketsService.getForTournament(tournamentId);
     res.json(result);
   } catch (e) {

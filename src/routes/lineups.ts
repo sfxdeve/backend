@@ -2,7 +2,10 @@ import { Router } from "express";
 import { validateRequest } from "../middlewares/validate-request.js";
 import { requireAuth } from "../middlewares/auth.js";
 import * as lineupsController from "../controllers/lineups.controller.js";
-import { setLineupBody, tournamentIdParam } from "../validators/lineups.js";
+import {
+  setLineupBody,
+  tournamentIdParam,
+} from "../validators/lineups.js";
 
 const router = Router();
 

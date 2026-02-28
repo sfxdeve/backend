@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { param } from "../lib/params.js";
 import * as notificationsService from "../services/notifications.service.js";
-import type { PaginationQuery } from "../lib/pagination.js";
+import type { ListNotificationsQuery } from "../validators/users.js";
 
 export async function list(
   req: Request,
@@ -11,7 +11,7 @@ export async function list(
   try {
     const result = await notificationsService.getUserNotifications(
       req.auth!.userId,
-      req.query as unknown as PaginationQuery,
+      req.query as unknown as ListNotificationsQuery,
     );
     res.json(result);
   } catch (e) {

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { toZonedTime } from "date-fns-tz";
+import { paginationSchema } from "../lib/pagination.js";
 import { Gender } from "../models/enums.js";
 
 const ROME_TZ = "Europe/Rome";
@@ -52,10 +53,14 @@ export const tournamentIdParam = z.object({
   id: z.string().min(1),
 });
 
-export const listTournamentsQuery = z.object({
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
-  seasonId: z.string().optional(),
-  gender: z.enum([Gender.M, Gender.W]).optional(),
-  status: z.string().optional(),
-});
+export const listTournamentsQuery = paginationSchema.merge(
+  z.object({
+    seasonId: z.string().optional(),
+    gender: z.enum([Gender.M, Gender.W]).optional(),
+    status: z.string().optional(),
+  }),
+);
+
+export type CreateTournamentBody = z.infer<typeof createTournamentBody>;
+export type UpdateTournamentBody = z.infer<typeof updateTournamentBody>;
+export type ListTournamentsQuery = z.infer<typeof listTournamentsQuery>;

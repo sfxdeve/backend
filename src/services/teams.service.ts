@@ -1,10 +1,10 @@
-import { Team } from "../models/Team.js";
 import { Lineup } from "../models/Lineup.js";
-import { Tournament } from "../models/Tournament.js";
 import { Player } from "../models/Player.js";
+import { Team } from "../models/Team.js";
+import { Tournament } from "../models/Tournament.js";
 import { AppError } from "../lib/errors.js";
-import * as walletService from "./wallet.service.js";
 import { CreditTransactionSource } from "../models/enums.js";
+import * as walletService from "./wallet.service.js";
 
 export async function getTeam(userId: string, tournamentId: string) {
   const team = await Team.findOne({ userId, tournamentId })

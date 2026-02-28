@@ -3,13 +3,13 @@ import { Match } from "../models/Match.js";
 import { Tournament } from "../models/Tournament.js";
 import { AppError } from "../lib/errors.js";
 import { MatchPhase, MatchStatus } from "../models/enums.js";
-import { computeMatchId } from "./matches.service.js";
 import {
   BRACKET_PROGRESSION,
-  POOL_WINNER_SEEDING,
-  POOL_LOSER_SEEDING,
   MAIN_DRAW_SLOTS,
+  POOL_LOSER_SEEDING,
+  POOL_WINNER_SEEDING,
 } from "../scoring/bracket-config.js";
+import { computeMatchId } from "./matches.service.js";
 
 export async function getForTournament(tournamentId: string) {
   const tournament = await Tournament.findById(tournamentId).lean();

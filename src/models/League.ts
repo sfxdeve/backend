@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { LeagueStatus, LeagueGameMode } from "./enums.js";
+import { LeagueGameMode, LeagueStatus } from "./enums.js";
 
 const leagueSchema = new mongoose.Schema({
   tournamentId: {

@@ -3,10 +3,10 @@ import { validateRequest } from "../middlewares/validate-request.js";
 import { requireAuth, requireAdmin } from "../middlewares/auth.js";
 import * as poolsController from "../controllers/pools.controller.js";
 import {
-  createGroupBody,
-  tournamentIdQuery,
-  groupIdParam,
   assignPairBody,
+  createGroupBody,
+  groupIdParam,
+  tournamentIdQuery,
 } from "../validators/pools.js";
 
 const router = Router();

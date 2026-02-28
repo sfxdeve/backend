@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { param } from "../lib/params.js";
 import * as scoringService from "../services/scoring.service.js";
+import type { PlayerScoresQuery } from "../validators/scoring.js";
 
 export async function getPlayerScores(
   req: Request,
@@ -8,10 +9,7 @@ export async function getPlayerScores(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { tournamentId, playerId } = req.query as {
-      tournamentId: string;
-      playerId?: string;
-    };
+    const { tournamentId, playerId } = req.query as PlayerScoresQuery;
     const result = await scoringService.getPlayerScores(tournamentId, playerId);
     res.json(result);
   } catch (e) {

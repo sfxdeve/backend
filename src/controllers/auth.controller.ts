@@ -1,5 +1,13 @@
 import type { Request, Response, NextFunction } from "express";
 import * as authService from "../services/auth.service.js";
+import type {
+  ForgotPasswordBody,
+  LoginBody,
+  RefreshBody,
+  RegisterBody,
+  ResetPasswordBody,
+  VerifyEmailBody,
+} from "../validators/auth.js";
 
 export async function register(
   req: Request,
@@ -7,7 +15,7 @@ export async function register(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const result = await authService.register(req.body);
+    const result = await authService.register(req.body as RegisterBody);
     res.status(201).json(result);
   } catch (e) {
     next(e);
@@ -20,7 +28,7 @@ export async function verifyEmail(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { userId, code } = req.body;
+    const { userId, code } = req.body as VerifyEmailBody;
     await authService.verifyEmail(userId, code);
     res.status(204).send();
   } catch (e) {
@@ -34,7 +42,7 @@ export async function login(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body as LoginBody;
     const result = await authService.login(
       email,
       password,
@@ -52,7 +60,7 @@ export async function refresh(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { refreshToken } = req.body;
+    const { refreshToken } = req.body as RefreshBody;
     const result = await authService.refreshTokens(refreshToken);
     res.json(result);
   } catch (e) {
@@ -79,7 +87,7 @@ export async function forgotPassword(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { email } = req.body;
+    const { email } = req.body as ForgotPasswordBody;
     await authService.forgotPassword(email);
     res.status(204).send();
   } catch (e) {
@@ -93,7 +101,7 @@ export async function resetPassword(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { userId, code, newPassword } = req.body;
+    const { userId, code, newPassword } = req.body as ResetPasswordBody;
     await authService.resetPassword(userId, code, newPassword);
     res.status(204).send();
   } catch (e) {

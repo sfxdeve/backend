@@ -1,21 +1,21 @@
 import { User } from "../models/User.js";
 import { Wallet } from "../models/Wallet.js";
 import { AppError } from "../lib/errors.js";
-import { hashSecret, compareSecret } from "../lib/hash.js";
+import { compareSecret, hashSecret } from "../lib/hash.js";
 import {
   signAccessToken,
   signRefreshToken,
   verifyRefreshToken,
   type AccessTokenPayload,
 } from "../lib/jwt.js";
+import { sendVerificationOtp, sendEmail } from "../lib/mailer.js";
+import { createOtp, verifyOtp } from "../lib/otp.js";
 import {
   createSession,
-  revokeSession,
   revokeAllUserSessions,
+  revokeSession,
   validateSession,
 } from "../lib/session.js";
-import { createOtp, verifyOtp } from "../lib/otp.js";
-import { sendVerificationOtp, sendEmail } from "../lib/mailer.js";
 import { OtpPurpose } from "../models/enums.js";
 
 export interface RegisterBody {

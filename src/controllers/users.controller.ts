@@ -1,8 +1,11 @@
 import type { Request, Response, NextFunction } from "express";
 import { param } from "../lib/params.js";
 import * as usersService from "../services/users.service.js";
-import type { AuditLogQuery } from "../services/users.service.js";
-import type { PaginationQuery } from "../lib/pagination.js";
+import type {
+  AuditLogQuery,
+  BlockUserBody,
+  ListUsersQuery,
+} from "../validators/users.js";
 
 export async function getProfile(
   req: Request,
@@ -52,7 +55,7 @@ export async function listUsers(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const result = await usersService.listUsers(req.query as unknown as PaginationQuery & { search?: string });
+    const result = await usersService.listUsers(req.query as unknown as ListUsersQuery);
     res.json(result);
   } catch (e) {
     next(e);
@@ -65,7 +68,7 @@ export async function blockUser(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { blocked } = req.body;
+    const { blocked } = req.body as BlockUserBody;
     await usersService.blockUser(param(req, "id"), blocked);
     res.status(204).send();
   } catch (e) {

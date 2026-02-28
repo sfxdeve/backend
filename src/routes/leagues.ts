@@ -5,9 +5,9 @@ import * as leaguesController from "../controllers/leagues.controller.js";
 import {
   createLeagueBody,
   joinLeagueBody,
-  updateLeagueBody,
   leagueIdParam,
   listLeaguesQuery,
+  updateLeagueBody,
 } from "../validators/leagues.js";
 
 const router = Router();

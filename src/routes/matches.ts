@@ -4,9 +4,9 @@ import { requireAuth, requireAdmin } from "../middlewares/auth.js";
 import * as matchesController from "../controllers/matches.controller.js";
 import {
   createMatchBody,
-  updateScoreBody,
-  matchIdParam,
   listMatchesQuery,
+  matchIdParam,
+  updateScoreBody,
 } from "../validators/matches.js";
 
 const router = Router();

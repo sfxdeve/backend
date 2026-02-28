@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import { PoolGroup } from "../models/PoolGroup.js";
 import { Match } from "../models/Match.js";
+import { PoolGroup } from "../models/PoolGroup.js";
 import { AppError } from "../lib/errors.js";
 import { Gender } from "../models/enums.js";
 

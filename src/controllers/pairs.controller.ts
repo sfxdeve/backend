@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { param } from "../lib/params.js";
 import * as pairsService from "../services/pairs.service.js";
+import type { CreatePairBody, TournamentIdQuery } from "../validators/pairs.js";
 
 export async function list(
   req: Request,
@@ -8,7 +9,7 @@ export async function list(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { tournamentId } = req.query as { tournamentId: string };
+    const { tournamentId } = req.query as TournamentIdQuery;
     const result = await pairsService.listForTournament(tournamentId);
     res.json(result);
   } catch (e) {
@@ -22,8 +23,8 @@ export async function create(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { tournamentId } = req.query as { tournamentId: string };
-    const result = await pairsService.create(tournamentId, req.body);
+    const { tournamentId } = req.query as TournamentIdQuery;
+    const result = await pairsService.create(tournamentId, req.body as CreatePairBody);
     res.status(201).json(result);
   } catch (e) {
     next(e);

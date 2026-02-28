@@ -1,5 +1,10 @@
 import mongoose, { type Types } from "mongoose";
-import { MatchPhase, MatchStatus, MatchResult, PoolRound } from "./enums.js";
+import {
+  MatchPhase,
+  MatchResult,
+  MatchStatus,
+  PoolRound,
+} from "./enums.js";
 
 interface IMatchSet {
   home: number;

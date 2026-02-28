@@ -2,9 +2,9 @@ import { Tournament } from "../models/Tournament.js";
 import { AppError } from "../lib/errors.js";
 import { paginationOptions, paginationMeta } from "../lib/pagination.js";
 import type { PaginationQuery } from "../lib/pagination.js";
-import { TournamentStatus } from "../models/enums.js";
 import { appEmitter } from "../events/emitter.js";
 import type { ScoringTable } from "../scoring/engine.js";
+import { TournamentStatus } from "../models/enums.js";
 
 const defaultScoringTable: ScoringTable = {
   QUALIFICATION: 1,

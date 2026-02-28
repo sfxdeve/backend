@@ -7,3 +7,6 @@ export const setTeamBody = z.object({
 export const tournamentIdParam = z.object({
   tournamentId: z.string().min(1),
 });
+
+export type SetTeamBody = z.infer<typeof setTeamBody>;
+export type TournamentIdParam = z.infer<typeof tournamentIdParam>;

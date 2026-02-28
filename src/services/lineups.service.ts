@@ -2,8 +2,8 @@ import mongoose from "mongoose";
 import { Lineup } from "../models/Lineup.js";
 import { Team } from "../models/Team.js";
 import { AppError } from "../lib/errors.js";
-import { LineupStatus } from "../models/enums.js";
 import { appEmitter } from "../events/emitter.js";
+import { LineupStatus } from "../models/enums.js";
 
 export async function getLineup(userId: string, tournamentId: string) {
   const lineup = await Lineup.findOne({ userId, tournamentId })

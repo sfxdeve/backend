@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { paginationSchema } from "../lib/pagination.js";
 import { LeagueGameMode } from "../models/enums.js";
 
 export const createLeagueBody = z.object({
@@ -26,10 +27,15 @@ export const leagueIdParam = z.object({
   id: z.string().min(1),
 });
 
-export const listLeaguesQuery = z.object({
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
-  tournamentId: z.string().optional(),
-  isPublic: z.coerce.boolean().optional(),
-  status: z.string().optional(),
-});
+export const listLeaguesQuery = paginationSchema.merge(
+  z.object({
+    tournamentId: z.string().optional(),
+    isPublic: z.coerce.boolean().optional(),
+    status: z.string().optional(),
+  }),
+);
+
+export type CreateLeagueBody = z.infer<typeof createLeagueBody>;
+export type JoinLeagueBody = z.infer<typeof joinLeagueBody>;
+export type UpdateLeagueBody = z.infer<typeof updateLeagueBody>;
+export type ListLeaguesQuery = z.infer<typeof listLeaguesQuery>;

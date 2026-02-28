@@ -1,14 +1,14 @@
 import { Router } from "express";
 import { validateRequest } from "../middlewares/validate-request.js";
 import { requireAuth, requireAdmin } from "../middlewares/auth.js";
-import * as tournamentsController from "../controllers/tournaments.controller.js";
-import * as scoringController from "../controllers/scoring.controller.js";
 import * as bracketsController from "../controllers/brackets.controller.js";
+import * as scoringController from "../controllers/scoring.controller.js";
+import * as tournamentsController from "../controllers/tournaments.controller.js";
 import {
   createTournamentBody,
-  updateTournamentBody,
-  tournamentIdParam,
   listTournamentsQuery,
+  tournamentIdParam,
+  updateTournamentBody,
 } from "../validators/tournaments.js";
 
 const router = Router();
@@ -62,4 +62,5 @@ router.post(
   validateRequest({ params: tournamentIdParam }),
   bracketsController.generateBracket,
 );
+
 export default router;

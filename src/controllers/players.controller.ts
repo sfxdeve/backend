@@ -1,7 +1,11 @@
 import type { Request, Response, NextFunction } from "express";
 import { param } from "../lib/params.js";
 import * as playersService from "../services/players.service.js";
-import type { ListPlayersQuery } from "../services/players.service.js";
+import type {
+  AdjustPriceBody,
+  ListPlayersQuery,
+  UpdatePlayerBody,
+} from "../validators/players.js";
 
 export async function list(
   req: Request,
@@ -48,7 +52,7 @@ export async function update(
   next: NextFunction,
 ): Promise<void> {
   try {
-    await playersService.update(param(req, "id"), req.body);
+    await playersService.update(param(req, "id"), req.body as UpdatePlayerBody);
     res.status(204).send();
   } catch (e) {
     next(e);
@@ -61,7 +65,7 @@ export async function adjustPrice(
   next: NextFunction,
 ): Promise<void> {
   try {
-    await playersService.adjustPrice(param(req, "id"), req.body);
+    await playersService.adjustPrice(param(req, "id"), req.body as AdjustPriceBody);
     res.status(204).send();
   } catch (e) {
     next(e);
