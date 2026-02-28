@@ -1,8 +1,20 @@
-import mongoose from "mongoose";
+import mongoose, { type Types } from "mongoose";
 import {
   CreditTransactionSource,
   CreditTransactionType,
 } from "./enums.js";
+
+export interface ICreditTransaction {
+  _id: Types.ObjectId;
+  walletId: Types.ObjectId;
+  type: CreditTransactionType;
+  source: CreditTransactionSource;
+  amount: number;
+  balanceAfter: number;
+  meta?: Record<string, unknown>;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const creditTransactionSchema = new mongoose.Schema(
   {
@@ -29,7 +41,7 @@ const creditTransactionSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-export const CreditTransaction = mongoose.model(
+export const CreditTransaction = mongoose.model<ICreditTransaction>(
   "CreditTransaction",
   creditTransactionSchema,
 );

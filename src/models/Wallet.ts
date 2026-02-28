@@ -1,4 +1,12 @@
-import mongoose from "mongoose";
+import mongoose, { type Types } from "mongoose";
+
+export interface IWallet {
+  _id: Types.ObjectId;
+  userId: Types.ObjectId;
+  balance: number;
+  totalPurchased: number;
+  totalSpent: number;
+}
 
 const walletSchema = new mongoose.Schema({
   userId: {
@@ -12,4 +20,4 @@ const walletSchema = new mongoose.Schema({
   totalSpent: { type: Number, default: 0 },
 });
 
-export const Wallet = mongoose.model("Wallet", walletSchema);
+export const Wallet = mongoose.model<IWallet>("Wallet", walletSchema);

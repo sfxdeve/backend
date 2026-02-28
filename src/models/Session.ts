@@ -1,4 +1,13 @@
-import mongoose from "mongoose";
+import mongoose, { type Types } from "mongoose";
+
+export interface ISession {
+  _id: Types.ObjectId;
+  userId: Types.ObjectId;
+  userAgent?: string;
+  isRevoked: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const sessionSchema = new mongoose.Schema(
   {
@@ -17,6 +26,6 @@ const sessionSchema = new mongoose.Schema(
 sessionSchema.index(
   { createdAt: 1 },
   { expireAfterSeconds: 30 * 24 * 60 * 60 },
-); // 30 days TTL
+);
 
-export const Session = mongoose.model("Session", sessionSchema);
+export const Session = mongoose.model<ISession>("Session", sessionSchema);

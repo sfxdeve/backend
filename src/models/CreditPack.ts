@@ -1,4 +1,12 @@
-import mongoose from "mongoose";
+import mongoose, { type Types } from "mongoose";
+
+export interface ICreditPack {
+  _id: Types.ObjectId;
+  name: string;
+  credits: number;
+  stripePriceId: string;
+  active: boolean;
+}
 
 const creditPackSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -7,4 +15,7 @@ const creditPackSchema = new mongoose.Schema({
   active: { type: Boolean, default: true, index: true },
 });
 
-export const CreditPack = mongoose.model("CreditPack", creditPackSchema);
+export const CreditPack = mongoose.model<ICreditPack>(
+  "CreditPack",
+  creditPackSchema,
+);

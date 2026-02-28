@@ -1,5 +1,13 @@
-import mongoose from "mongoose";
+import mongoose, { type Types } from "mongoose";
 import { OtpPurpose } from "./enums.js";
+
+export interface IOTP {
+  _id: Types.ObjectId;
+  userId: Types.ObjectId;
+  purpose: OtpPurpose;
+  hash: string;
+  expiresAt: Date;
+}
 
 const otpSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
@@ -11,4 +19,4 @@ const otpSchema = new mongoose.Schema({
 otpSchema.index({ userId: 1, purpose: 1 });
 otpSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-export const OTP = mongoose.model("OTP", otpSchema);
+export const OTP = mongoose.model<IOTP>("OTP", otpSchema);

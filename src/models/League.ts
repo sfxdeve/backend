@@ -1,5 +1,14 @@
-import mongoose from "mongoose";
-import { LeagueGameMode, LeagueStatus } from "./enums.js";
+import mongoose, { type Types } from "mongoose";
+
+export interface ILeague {
+  _id: Types.ObjectId;
+  tournamentId: Types.ObjectId;
+  ownerId: Types.ObjectId;
+  name: string;
+  isPublic: boolean;
+  inviteCode?: string;
+  memberIds: Types.ObjectId[];
+}
 
 const leagueSchema = new mongoose.Schema({
   tournamentId: {
@@ -17,23 +26,12 @@ const leagueSchema = new mongoose.Schema({
   name: { type: String, required: true },
   isPublic: { type: Boolean, required: true, index: true },
   inviteCode: { type: String, sparse: true, unique: true },
-  status: {
-    type: String,
-    required: true,
-    enum: Object.values(LeagueStatus),
-    default: LeagueStatus.REGISTRATION_OPEN,
-  },
-  gameMode: {
-    type: String,
-    required: true,
-    enum: Object.values(LeagueGameMode),
-    default: LeagueGameMode.CLASSIC,
-  },
-  entryFee: { type: Number, default: 0 },
-  maxMembers: { type: Number },
+  memberIds: [
+    { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  ],
 });
 
-leagueSchema.index({ tournamentId: 1, status: 1 });
 leagueSchema.index({ isPublic: 1 });
+leagueSchema.index({ tournamentId: 1 });
 
-export const League = mongoose.model("League", leagueSchema);
+export const League = mongoose.model<ILeague>("League", leagueSchema);
