@@ -2,6 +2,7 @@ import { Router, type Request, type Response, type NextFunction } from "express"
 import { validateRequest } from "../../middlewares/validate-request.js";
 import { requireAuth } from "../../middlewares/auth.js";
 import { authRateLimiter, otpRateLimiter } from "../../middlewares/rate-limit.js";
+import { env } from "../../lib/env.js";
 import { AppError } from "../../lib/errors.js";
 import * as service from "./service.js";
 import {
@@ -17,7 +18,7 @@ const router = Router();
 const REFRESH_COOKIE = "refreshToken";
 const COOKIE_OPTS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
+  secure: env.NODE_ENV === "production",
   sameSite: "strict" as const,
   maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
 };

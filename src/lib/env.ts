@@ -6,6 +6,10 @@ const envSchema = z.object({
     .default("development"),
   PORT: z.coerce.number().int().positive().default(5555),
   MONGO_URI: z.string().min(1, "MONGO_URI is required"),
+  CORS_ORIGINS: z
+    .string()
+    .default("http://localhost:5173,http://localhost:3000"),
+  API_PREFIX: z.string().default("/api/v1"),
   JWT_ACCESS_SECRET: z
     .string()
     .min(16, "JWT_ACCESS_SECRET must be at least 16 chars"),
@@ -26,10 +30,6 @@ const envSchema = z.object({
   STRIPE_WEBHOOK_SECRET: z.string().min(1, "STRIPE_WEBHOOK_SECRET is required"),
   PAYMENT_SUCCESS_URL: z.url("PAYMENT_SUCCESS_URL must be a valid URL"),
   PAYMENT_CANCEL_URL: z.url("PAYMENT_CANCEL_URL must be a valid URL"),
-  CORS_ORIGINS: z
-    .string()
-    .default("http://localhost:5173,http://localhost:3000"),
-  API_PREFIX: z.string().default("/api/v1"),
 });
 
 const parsed = envSchema.safeParse(process.env);
