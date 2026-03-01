@@ -1,0 +1,44 @@
+import { z } from "zod";
+import { LeagueType, LeagueStatus, RankingMode } from "../../models/enums.js";
+
+export const CreateLeagueBody = z
+  .object({
+    name: z.string().min(2).max(200),
+    type: z.nativeEnum(LeagueType),
+    championshipId: z.string().length(24),
+    rankingMode: z.nativeEnum(RankingMode),
+    rosterSize: z.number().int().min(1).max(20),
+    startersPerGameweek: z.number().int().min(1),
+    initialBudget: z.number().min(0),
+    marketEnabled: z.boolean().default(false),
+    entryFee: z.number().min(0).optional(),
+    prize1st: z.string().max(500).optional(),
+    prize2nd: z.string().max(500).optional(),
+    prize3rd: z.string().max(500).optional(),
+  })
+  .refine((data) => data.startersPerGameweek < data.rosterSize, {
+    message: "startersPerGameweek must be less than rosterSize",
+    path: ["startersPerGameweek"],
+  });
+
+export const JoinLeagueBody = z.object({
+  inviteCode: z.string().optional(),
+  teamName: z.string().min(1).max(100),
+});
+
+export const LeagueQueryParams = z.object({
+  type: z.nativeEnum(LeagueType).optional(),
+  status: z.nativeEnum(LeagueStatus).optional(),
+  championshipId: z.string().length(24).optional(),
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+export const StandingsQueryParams = z.object({
+  tournamentId: z.string().length(24).optional(),
+});
+
+export type CreateLeagueBodyType = z.infer<typeof CreateLeagueBody>;
+export type JoinLeagueBodyType = z.infer<typeof JoinLeagueBody>;
+export type LeagueQueryParamsType = z.infer<typeof LeagueQueryParams>;
+export type StandingsQueryParamsType = z.infer<typeof StandingsQueryParams>;

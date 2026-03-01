@@ -29,6 +29,7 @@ const envSchema = z.object({
   CORS_ORIGINS: z
     .string()
     .default("http://localhost:5173,http://localhost:3000"),
+  API_PREFIX: z.string().default("/api/v1"),
 });
 
 const parsed = envSchema.safeParse(process.env);

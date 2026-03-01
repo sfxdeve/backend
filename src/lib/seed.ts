@@ -1,5 +1,5 @@
 import { User } from "../models/Auth.js";
-import { CreditPack } from "../models/CreditPack.js";
+import { CreditPack } from "../models/Credits.js";
 import { hashSecret } from "./hash.js";
 import { env } from "./env.js";
 import { logger } from "./logger.js";

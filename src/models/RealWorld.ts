@@ -1,94 +1,233 @@
 import mongoose, { Document, Schema, Types } from "mongoose";
-import { Role, OtpPurpose } from "./enums.js";
+import {
+  Gender,
+  TournamentStatus,
+  EntryStatus,
+  MatchRound,
+  MatchStatus,
+} from "./enums.js";
 
-// ── User ─────────────────────────────────────────────────────
+// ── Championship ──────────────────────────────────────────────
 
-export interface IUser extends Document {
-  email: string;
-  passwordHash: string;
+export interface IChampionship extends Document {
   name: string;
-  role: Role;
-  isVerified: boolean;
-  isBlocked: boolean;
+  gender: Gender;
+  seasonYear: number;
   createdAt: Date;
   updatedAt: Date;
 }
 
-const UserSchema = new Schema<IUser>(
+const ChampionshipSchema = new Schema<IChampionship>(
   {
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-      trim: true,
-      index: true,
-    },
-    passwordHash: { type: String, required: true },
     name: { type: String, required: true, trim: true },
-    role: {
-      type: String,
-      enum: Object.values(Role),
-      default: Role.USER,
-      required: true,
-    },
-    isVerified: { type: Boolean, default: false },
-    isBlocked: { type: Boolean, default: false },
+    gender: { type: String, enum: Object.values(Gender), required: true },
+    seasonYear: { type: Number, required: true },
   },
   { timestamps: true },
 );
 
-export const User = mongoose.model<IUser>("User", UserSchema);
+ChampionshipSchema.index({ gender: 1, seasonYear: 1 });
 
-// ── Session ──────────────────────────────────────────────────
+export const Championship = mongoose.model<IChampionship>(
+  "Championship",
+  ChampionshipSchema,
+);
 
-export interface ISession extends Document {
-  userId: Types.ObjectId;
-  userAgent: string;
-  isRevoked: boolean;
+// ── Athlete ───────────────────────────────────────────────────
+
+export interface IAthlete extends Document {
+  firstName: string;
+  lastName: string;
+  gender: Gender;
+  championshipId: Types.ObjectId;
+  pictureUrl?: string;
+  entryPoints: number;
+  globalPoints: number;
+  averageFantasyScore: number;
+  fantacoinCost: number;
   createdAt: Date;
   updatedAt: Date;
 }
 
-const SessionSchema = new Schema<ISession>(
+const AthleteSchema = new Schema<IAthlete>(
   {
-    userId: {
+    firstName: { type: String, required: true, trim: true },
+    lastName: { type: String, required: true, trim: true },
+    gender: { type: String, enum: Object.values(Gender), required: true },
+    championshipId: {
       type: Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Championship",
       required: true,
-      index: true,
     },
-    userAgent: { type: String, default: "" },
-    isRevoked: { type: Boolean, default: false },
+    pictureUrl: { type: String },
+    entryPoints: { type: Number, default: 0, min: 0 },
+    globalPoints: { type: Number, default: 0, min: 0 },
+    averageFantasyScore: { type: Number, default: 0 },
+    fantacoinCost: { type: Number, default: 0, min: 0 },
   },
   { timestamps: true },
 );
 
-// TTL: documents expire 30 days after createdAt
-SessionSchema.index(
-  { createdAt: 1 },
-  { expireAfterSeconds: 60 * 60 * 24 * 30 },
-);
+AthleteSchema.index({ championshipId: 1 });
+AthleteSchema.index({ championshipId: 1, gender: 1 });
 
-export const Session = mongoose.model<ISession>("Session", SessionSchema);
+export const Athlete = mongoose.model<IAthlete>("Athlete", AthleteSchema);
 
-// ── OTP ──────────────────────────────────────────────────────
+// ── Tournament ────────────────────────────────────────────────
 
-export interface IOtp extends Document {
-  userId: Types.ObjectId;
-  purpose: OtpPurpose;
-  hash: string;
-  expiresAt: Date;
+export interface ITournament extends Document {
+  championshipId: Types.ObjectId;
+  location: string;
+  startDate: Date;
+  endDate: Date;
+  status: TournamentStatus;
+  lineupLockAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-const OtpSchema = new Schema<IOtp>({
-  userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  purpose: { type: String, enum: Object.values(OtpPurpose), required: true },
-  hash: { type: String, required: true },
-  expiresAt: { type: Date, required: true },
-});
+const TournamentSchema = new Schema<ITournament>(
+  {
+    championshipId: {
+      type: Schema.Types.ObjectId,
+      ref: "Championship",
+      required: true,
+    },
+    location: { type: String, required: true, trim: true },
+    startDate: { type: Date, required: true },
+    endDate: { type: Date, required: true },
+    status: {
+      type: String,
+      enum: Object.values(TournamentStatus),
+      default: TournamentStatus.UPCOMING,
+    },
+    lineupLockAt: { type: Date },
+  },
+  { timestamps: true },
+);
 
-OtpSchema.index({ userId: 1, purpose: 1 });
-OtpSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // TTL: auto-expire at expiresAt
+TournamentSchema.index({ championshipId: 1, status: 1 });
+TournamentSchema.index({ startDate: 1 });
 
-export const Otp = mongoose.model<IOtp>("Otp", OtpSchema);
+export const Tournament = mongoose.model<ITournament>(
+  "Tournament",
+  TournamentSchema,
+);
+
+// ── TournamentPair ────────────────────────────────────────────
+// A pair is always tournament-scoped. The same athlete may compete
+// with different partners across tournaments.
+
+export interface ITournamentPair extends Document {
+  tournamentId: Types.ObjectId;
+  athleteAId: Types.ObjectId;
+  athleteBId: Types.ObjectId;
+  entryStatus: EntryStatus;
+  seedRank?: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const TournamentPairSchema = new Schema<ITournamentPair>(
+  {
+    tournamentId: {
+      type: Schema.Types.ObjectId,
+      ref: "Tournament",
+      required: true,
+    },
+    athleteAId: {
+      type: Schema.Types.ObjectId,
+      ref: "Athlete",
+      required: true,
+    },
+    athleteBId: {
+      type: Schema.Types.ObjectId,
+      ref: "Athlete",
+      required: true,
+    },
+    entryStatus: {
+      type: String,
+      enum: Object.values(EntryStatus),
+      required: true,
+    },
+    seedRank: { type: Number },
+  },
+  { timestamps: true },
+);
+
+TournamentPairSchema.index({ tournamentId: 1 });
+TournamentPairSchema.index(
+  { tournamentId: 1, athleteAId: 1, athleteBId: 1 },
+  { unique: true },
+);
+
+export const TournamentPair = mongoose.model<ITournamentPair>(
+  "TournamentPair",
+  TournamentPairSchema,
+);
+
+// ── Match ─────────────────────────────────────────────────────
+
+export interface IMatch extends Document {
+  tournamentId: Types.ObjectId;
+  round: MatchRound;
+  pairAId: Types.ObjectId;
+  pairBId: Types.ObjectId;
+  scheduledAt?: Date;
+  set1A?: number;
+  set1B?: number;
+  set2A?: number;
+  set2B?: number;
+  set3A?: number;
+  set3B?: number;
+  winnerPairId?: Types.ObjectId;
+  status: MatchStatus;
+  isRetirement: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const MatchSchema = new Schema<IMatch>(
+  {
+    tournamentId: {
+      type: Schema.Types.ObjectId,
+      ref: "Tournament",
+      required: true,
+    },
+    round: {
+      type: String,
+      enum: Object.values(MatchRound),
+      required: true,
+    },
+    pairAId: {
+      type: Schema.Types.ObjectId,
+      ref: "TournamentPair",
+      required: true,
+    },
+    pairBId: {
+      type: Schema.Types.ObjectId,
+      ref: "TournamentPair",
+      required: true,
+    },
+    scheduledAt: { type: Date },
+    set1A: { type: Number },
+    set1B: { type: Number },
+    set2A: { type: Number },
+    set2B: { type: Number },
+    set3A: { type: Number },
+    set3B: { type: Number },
+    winnerPairId: { type: Schema.Types.ObjectId, ref: "TournamentPair" },
+    status: {
+      type: String,
+      enum: Object.values(MatchStatus),
+      default: MatchStatus.SCHEDULED,
+    },
+    isRetirement: { type: Boolean, default: false },
+  },
+  { timestamps: true },
+);
+
+MatchSchema.index({ tournamentId: 1, round: 1 });
+MatchSchema.index({ tournamentId: 1, status: 1 });
+
+export const Match = mongoose.model<IMatch>("Match", MatchSchema);

@@ -6,6 +6,7 @@ export type ErrorCode =
   | "CONFLICT"
   | "UNPROCESSABLE"
   | "TOO_MANY_REQUESTS"
+  | "NOT_IMPLEMENTED"
   | "INTERNAL_SERVER_ERROR";
 
 const statusByCode: Record<ErrorCode, number> = {
@@ -16,6 +17,7 @@ const statusByCode: Record<ErrorCode, number> = {
   CONFLICT: 409,
   UNPROCESSABLE: 422,
   TOO_MANY_REQUESTS: 429,
+  NOT_IMPLEMENTED: 501,
   INTERNAL_SERVER_ERROR: 500,
 };
 
