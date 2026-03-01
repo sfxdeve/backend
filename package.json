@@ -6,7 +6,8 @@
     "build": "tsc",
     "dev": "tsx watch src/main.ts",
     "start": "node dist/main.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "postman:gen": "node scripts/generate-postman.js"
   },
   "dependencies": {
     "@dotenvx/dotenvx": "^1.52.0",
