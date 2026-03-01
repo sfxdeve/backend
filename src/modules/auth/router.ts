@@ -58,12 +58,10 @@ router.post(
   async (req: Request, res: Response) => {
     const userAgent = req.headers["user-agent"];
     const result = await service.login(req.body, userAgent);
-    res
-      .cookie(REFRESH_COOKIE, result.refreshToken, COOKIE_OPTS)
-      .json({
-        success: true,
-        data: { accessToken: result.accessToken, user: result.user },
-      });
+    res.cookie(REFRESH_COOKIE, result.refreshToken, COOKIE_OPTS).json({
+      success: true,
+      data: { accessToken: result.accessToken, user: result.user },
+    });
   },
 );
 

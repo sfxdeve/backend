@@ -34,12 +34,10 @@ router.post(
   async (req: Request, res: Response) => {
     const sig = req.headers["stripe-signature"] as string;
     if (!sig) {
-      res
-        .status(400)
-        .json({
-          success: false,
-          error: { code: "BAD_REQUEST", message: "Missing Stripe-Signature" },
-        });
+      res.status(400).json({
+        success: false,
+        error: { code: "BAD_REQUEST", message: "Missing Stripe-Signature" },
+      });
       return;
     }
     const data = await service.handleWebhook(req.body as Buffer, sig);
