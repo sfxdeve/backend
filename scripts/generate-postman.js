@@ -43,7 +43,8 @@ const collection = {
     name: "Fantabeach API",
     description:
       "Fantabeach backend API – auth, championships, tournaments, matches, leagues, fantasy teams, credits, admin. Requires Fantabeach Local (or compatible) environment.",
-    schema: "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    schema:
+      "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
   },
   auth: {
     type: "bearer",
@@ -167,8 +168,7 @@ const collection = {
             header: [{ key: "Content-Type", value: "application/json" }],
             body: {
               mode: "raw",
-              raw:
-                '{\n  "email": "{{adminEmail}}",\n  "code": "123456",\n  "password": "newpassword123"\n}',
+              raw: '{\n  "email": "{{adminEmail}}",\n  "code": "123456",\n  "password": "newpassword123"\n}',
             },
             url: "{{baseUrl}}{{apiPrefix}}/auth/reset-password",
           },
@@ -193,8 +193,7 @@ const collection = {
             header: [{ key: "Content-Type", value: "application/json" }],
             body: {
               mode: "raw",
-              raw:
-                '{\n  "name": "World Tour 2025",\n  "gender": "M",\n  "seasonYear": 2025\n}',
+              raw: '{\n  "name": "World Tour 2025",\n  "gender": "M",\n  "seasonYear": 2025\n}',
             },
             url: "{{baseUrl}}{{apiPrefix}}/championships",
           },
@@ -214,8 +213,7 @@ const collection = {
             header: [{ key: "Content-Type", value: "application/json" }],
             body: {
               mode: "raw",
-              raw:
-                '{\n  "name": "World Tour 2025 Updated",\n  "gender": "M",\n  "seasonYear": 2025\n}',
+              raw: '{\n  "name": "World Tour 2025 Updated",\n  "gender": "M",\n  "seasonYear": 2025\n}',
             },
             url: "{{baseUrl}}{{apiPrefix}}/championships/{{championshipId}}",
           },
@@ -230,8 +228,7 @@ const collection = {
           request: {
             method: "GET",
             header: [],
-            url:
-              "{{baseUrl}}{{apiPrefix}}/athletes?championshipId={{championshipId}}&gender=M&page=1&limit=20",
+            url: "{{baseUrl}}{{apiPrefix}}/athletes?championshipId={{championshipId}}&gender=M&page=1&limit=20",
           },
         },
         {
@@ -241,8 +238,7 @@ const collection = {
             header: [{ key: "Content-Type", value: "application/json" }],
             body: {
               mode: "raw",
-              raw:
-                '{\n  "firstName": "John",\n  "lastName": "Doe",\n  "gender": "M",\n  "championshipId": "{{championshipId}}",\n  "entryPoints": 0,\n  "globalPoints": 0,\n  "fantacoinCost": 0\n}',
+              raw: '{\n  "firstName": "John",\n  "lastName": "Doe",\n  "gender": "M",\n  "championshipId": "{{championshipId}}",\n  "entryPoints": 0,\n  "globalPoints": 0,\n  "fantacoinCost": 0\n}',
             },
             url: "{{baseUrl}}{{apiPrefix}}/athletes",
           },
@@ -277,8 +273,7 @@ const collection = {
           request: {
             method: "GET",
             header: [],
-            url:
-              "{{baseUrl}}{{apiPrefix}}/tournaments?championshipId={{championshipId}}&status=UPCOMING&page=1&limit=20",
+            url: "{{baseUrl}}{{apiPrefix}}/tournaments?championshipId={{championshipId}}&status=UPCOMING&page=1&limit=20",
           },
         },
         {
@@ -288,8 +283,7 @@ const collection = {
             header: [{ key: "Content-Type", value: "application/json" }],
             body: {
               mode: "raw",
-              raw:
-                '{\n  "championshipId": "{{championshipId}}",\n  "location": "Rome",\n  "startDate": "2025-05-01T00:00:00.000Z",\n  "endDate": "2025-05-07T00:00:00.000Z"\n}',
+              raw: '{\n  "championshipId": "{{championshipId}}",\n  "location": "Rome",\n  "startDate": "2025-05-01T00:00:00.000Z",\n  "endDate": "2025-05-07T00:00:00.000Z"\n}',
             },
             url: "{{baseUrl}}{{apiPrefix}}/tournaments",
           },
@@ -309,8 +303,7 @@ const collection = {
             header: [{ key: "Content-Type", value: "application/json" }],
             body: {
               mode: "raw",
-              raw:
-                '{\n  "location": "Rome, Italy",\n  "status": "REGISTRATION_OPEN"\n}',
+              raw: '{\n  "location": "Rome, Italy",\n  "status": "REGISTRATION_OPEN"\n}',
             },
             url: "{{baseUrl}}{{apiPrefix}}/tournaments/{{tournamentId}}",
           },
@@ -320,8 +313,7 @@ const collection = {
           request: {
             method: "GET",
             header: [],
-            url:
-              "{{baseUrl}}{{apiPrefix}}/tournaments/{{tournamentId}}/pairs",
+            url: "{{baseUrl}}{{apiPrefix}}/tournaments/{{tournamentId}}/pairs",
           },
         },
         {
@@ -331,11 +323,9 @@ const collection = {
             header: [{ key: "Content-Type", value: "application/json" }],
             body: {
               mode: "raw",
-              raw:
-                '{\n  "athleteAId": "{{athleteAId}}",\n  "athleteBId": "{{athleteBId}}",\n  "entryStatus": "DIRECT",\n  "seedRank": 1\n}',
+              raw: '{\n  "athleteAId": "{{athleteAId}}",\n  "athleteBId": "{{athleteBId}}",\n  "entryStatus": "DIRECT",\n  "seedRank": 1\n}',
             },
-            url:
-              "{{baseUrl}}{{apiPrefix}}/tournaments/{{tournamentId}}/pairs",
+            url: "{{baseUrl}}{{apiPrefix}}/tournaments/{{tournamentId}}/pairs",
           },
         },
         {
@@ -343,8 +333,7 @@ const collection = {
           request: {
             method: "DELETE",
             header: [],
-            url:
-              "{{baseUrl}}{{apiPrefix}}/tournaments/{{tournamentId}}/pairs/{{pairId}}",
+            url: "{{baseUrl}}{{apiPrefix}}/tournaments/{{tournamentId}}/pairs/{{pairId}}",
           },
         },
         {
@@ -352,8 +341,7 @@ const collection = {
           request: {
             method: "POST",
             header: [],
-            url:
-              "{{baseUrl}}{{apiPrefix}}/tournaments/{{tournamentId}}/lock",
+            url: "{{baseUrl}}{{apiPrefix}}/tournaments/{{tournamentId}}/lock",
           },
         },
         {
@@ -361,8 +349,7 @@ const collection = {
           request: {
             method: "GET",
             header: [],
-            url:
-              "{{baseUrl}}{{apiPrefix}}/tournaments/{{tournamentId}}/bracket",
+            url: "{{baseUrl}}{{apiPrefix}}/tournaments/{{tournamentId}}/bracket",
           },
         },
         {
@@ -370,8 +357,7 @@ const collection = {
           request: {
             method: "GET",
             header: [],
-            url:
-              "{{baseUrl}}{{apiPrefix}}/tournaments/{{tournamentId}}/results",
+            url: "{{baseUrl}}{{apiPrefix}}/tournaments/{{tournamentId}}/results",
           },
         },
       ],
@@ -384,8 +370,7 @@ const collection = {
           request: {
             method: "GET",
             header: [],
-            url:
-              "{{baseUrl}}{{apiPrefix}}/matches?tournamentId={{tournamentId}}&round=POOL&status=SCHEDULED",
+            url: "{{baseUrl}}{{apiPrefix}}/matches?tournamentId={{tournamentId}}&round=POOL&status=SCHEDULED",
           },
         },
         {
@@ -395,8 +380,7 @@ const collection = {
             header: [{ key: "Content-Type", value: "application/json" }],
             body: {
               mode: "raw",
-              raw:
-                '{\n  "tournamentId": "{{tournamentId}}",\n  "round": "POOL",\n  "pairAId": "{{pairAId}}",\n  "pairBId": "{{pairBId}}"\n}',
+              raw: '{\n  "tournamentId": "{{tournamentId}}",\n  "round": "POOL",\n  "pairAId": "{{pairAId}}",\n  "pairBId": "{{pairBId}}"\n}',
             },
             url: "{{baseUrl}}{{apiPrefix}}/matches",
           },
@@ -416,8 +400,7 @@ const collection = {
             header: [{ key: "Content-Type", value: "application/json" }],
             body: {
               mode: "raw",
-              raw:
-                '{\n  "set1A": 21,\n  "set1B": 18,\n  "set2A": 21,\n  "set2B": 19,\n  "winnerPairId": "{{pairId}}",\n  "status": "COMPLETED"\n}',
+              raw: '{\n  "set1A": 21,\n  "set1B": 18,\n  "set2A": 21,\n  "set2B": 19,\n  "winnerPairId": "{{pairId}}",\n  "status": "COMPLETED"\n}',
             },
             url: "{{baseUrl}}{{apiPrefix}}/matches/{{matchId}}",
           },
@@ -432,8 +415,7 @@ const collection = {
           request: {
             method: "GET",
             header: [],
-            url:
-              "{{baseUrl}}{{apiPrefix}}/leagues?type=PUBLIC&status=OPEN&championshipId={{championshipId}}&page=1&limit=20",
+            url: "{{baseUrl}}{{apiPrefix}}/leagues?type=PUBLIC&status=OPEN&championshipId={{championshipId}}&page=1&limit=20",
           },
         },
         {
@@ -443,8 +425,7 @@ const collection = {
             header: [{ key: "Content-Type", value: "application/json" }],
             body: {
               mode: "raw",
-              raw:
-                '{\n  "name": "My League",\n  "type": "PUBLIC",\n  "championshipId": "{{championshipId}}",\n  "rankingMode": "OVERALL",\n  "rosterSize": 8,\n  "startersPerGameweek": 6,\n  "initialBudget": 100,\n  "marketEnabled": false\n}',
+              raw: '{\n  "name": "My League",\n  "type": "PUBLIC",\n  "championshipId": "{{championshipId}}",\n  "rankingMode": "OVERALL",\n  "rosterSize": 8,\n  "startersPerGameweek": 6,\n  "initialBudget": 100,\n  "marketEnabled": false\n}',
             },
             url: "{{baseUrl}}{{apiPrefix}}/leagues",
           },
@@ -464,8 +445,7 @@ const collection = {
             header: [{ key: "Content-Type", value: "application/json" }],
             body: {
               mode: "raw",
-              raw:
-                '{\n  "teamName": "My Fantasy Team",\n  "inviteCode": ""\n}',
+              raw: '{\n  "teamName": "My Fantasy Team",\n  "inviteCode": ""\n}',
             },
             url: "{{baseUrl}}{{apiPrefix}}/leagues/{{leagueId}}/join",
           },
@@ -475,8 +455,7 @@ const collection = {
           request: {
             method: "GET",
             header: [],
-            url:
-              "{{baseUrl}}{{apiPrefix}}/leagues/{{leagueId}}/standings?tournamentId={{tournamentId}}",
+            url: "{{baseUrl}}{{apiPrefix}}/leagues/{{leagueId}}/standings?tournamentId={{tournamentId}}",
           },
         },
       ],
@@ -521,8 +500,7 @@ const collection = {
           request: {
             method: "GET",
             header: [],
-            url:
-              "{{baseUrl}}{{apiPrefix}}/leagues/{{leagueId}}/team/lineup/{{tournamentId}}",
+            url: "{{baseUrl}}{{apiPrefix}}/leagues/{{leagueId}}/team/lineup/{{tournamentId}}",
           },
         },
         {
@@ -532,11 +510,9 @@ const collection = {
             header: [{ key: "Content-Type", value: "application/json" }],
             body: {
               mode: "raw",
-              raw:
-                '{\n  "slots": [\n    { "athleteId": "{{athleteId}}", "role": "STARTER" },\n    { "athleteId": "{{athleteId2}}", "role": "BENCH", "benchOrder": 1 }\n  ]\n}',
+              raw: '{\n  "slots": [\n    { "athleteId": "{{athleteId}}", "role": "STARTER" },\n    { "athleteId": "{{athleteId2}}", "role": "BENCH", "benchOrder": 1 }\n  ]\n}',
             },
-            url:
-              "{{baseUrl}}{{apiPrefix}}/leagues/{{leagueId}}/team/lineup/{{tournamentId}}",
+            url: "{{baseUrl}}{{apiPrefix}}/leagues/{{leagueId}}/team/lineup/{{tournamentId}}",
           },
         },
       ],
@@ -579,8 +555,7 @@ const collection = {
             header: [{ key: "Content-Type", value: "application/json" }],
             body: {
               mode: "raw",
-              raw:
-                '{\n  "name": "Starter Pack",\n  "credits": 100,\n  "stripePriceId": "price_xxx",\n  "active": true\n}',
+              raw: '{\n  "name": "Starter Pack",\n  "credits": 100,\n  "stripePriceId": "price_xxx",\n  "active": true\n}',
             },
             url: "{{baseUrl}}{{apiPrefix}}/credits/admin/packs",
           },
@@ -600,8 +575,7 @@ const collection = {
             header: [{ key: "Content-Type", value: "application/json" }],
             body: {
               mode: "raw",
-              raw:
-                '{\n  "userId": "{{userId}}",\n  "amount": 50,\n  "reason": "Bonus"\n}',
+              raw: '{\n  "userId": "{{userId}}",\n  "amount": 50,\n  "reason": "Bonus"\n}',
             },
             url: "{{baseUrl}}{{apiPrefix}}/credits/admin/grant",
           },
@@ -634,8 +608,7 @@ const collection = {
           request: {
             method: "GET",
             header: [],
-            url:
-              "{{baseUrl}}{{apiPrefix}}/admin/audit-log?adminId=&entity=&from=&to=&page=1&limit=20",
+            url: "{{baseUrl}}{{apiPrefix}}/admin/audit-log?adminId=&entity=&from=&to=&page=1&limit=20",
           },
         },
       ],
