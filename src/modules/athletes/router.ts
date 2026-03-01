@@ -2,7 +2,12 @@ import { Router, type Request, type Response } from "express";
 import { validateRequest } from "../../middlewares/validate-request.js";
 import { requireAuth, requireAdmin } from "../../middlewares/auth.js";
 import * as service from "./service.js";
-import { CreateAthleteBody, UpdateAthleteBody, AthleteQueryParams, type AthleteQueryParamsType } from "./schema.js";
+import {
+  CreateAthleteBody,
+  UpdateAthleteBody,
+  AthleteQueryParams,
+  type AthleteQueryParamsType,
+} from "./schema.js";
 
 const router = Router();
 
@@ -11,7 +16,9 @@ router.get(
   requireAuth,
   validateRequest({ query: AthleteQueryParams }),
   async (req: Request, res: Response) => {
-    const data = await service.list(req.query as unknown as AthleteQueryParamsType);
+    const data = await service.list(
+      req.query as unknown as AthleteQueryParamsType,
+    );
     res.json({ success: true, ...data });
   },
 );
@@ -36,7 +43,11 @@ router.patch(
   requireAdmin,
   validateRequest({ body: UpdateAthleteBody }),
   async (req: Request, res: Response) => {
-    const data = await service.update(req.params.id as string, req.body, req.auth!.userId);
+    const data = await service.update(
+      req.params.id as string,
+      req.body,
+      req.auth!.userId,
+    );
     res.json({ success: true, data });
   },
 );

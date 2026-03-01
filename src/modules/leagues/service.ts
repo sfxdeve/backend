@@ -23,7 +23,11 @@ import type {
   StandingsQueryParamsType,
 } from "./schema.js";
 
-export async function list(query: LeagueQueryParamsType, userId: string, isAdmin: boolean) {
+export async function list(
+  query: LeagueQueryParamsType,
+  userId: string,
+  isAdmin: boolean,
+) {
   const skip = (query.page - 1) * query.limit;
 
   const filter: Record<string, unknown> = {};
@@ -33,11 +37,10 @@ export async function list(query: LeagueQueryParamsType, userId: string, isAdmin
 
   // Non-admin users can only see: PUBLIC leagues + PRIVATE leagues they belong to
   if (!isAdmin) {
-    const myMemberships = await LeagueMembership.find({ userId }).distinct("leagueId");
-    filter.$or = [
-      { type: LeagueType.PUBLIC },
-      { _id: { $in: myMemberships } },
-    ];
+    const myMemberships = await LeagueMembership.find({ userId }).distinct(
+      "leagueId",
+    );
+    filter.$or = [{ type: LeagueType.PUBLIC }, { _id: { $in: myMemberships } }];
   }
 
   const [items, total] = await Promise.all([
@@ -63,7 +66,10 @@ export async function list(query: LeagueQueryParamsType, userId: string, isAdmin
     memberCount: countMap.get(String(l._id)) ?? 0,
   }));
 
-  return { items: enriched, meta: paginationMeta(total, { page: query.page, limit: query.limit }) };
+  return {
+    items: enriched,
+    meta: paginationMeta(total, { page: query.page, limit: query.limit }),
+  };
 }
 
 export async function getById(id: string, userId: string, isAdmin: boolean) {
@@ -74,7 +80,10 @@ export async function getById(id: string, userId: string, isAdmin: boolean) {
 
   // Private league visibility: only members or admin
   if (league.type === LeagueType.PRIVATE && !isAdmin) {
-    const membership = await LeagueMembership.findOne({ leagueId: id, userId }).lean();
+    const membership = await LeagueMembership.findOne({
+      leagueId: id,
+      userId,
+    }).lean();
     if (!membership) throw new AppError("NOT_FOUND", "League not found");
   }
 
@@ -118,7 +127,8 @@ export async function join(
 
   // Check duplicate enrollment
   const existing = await LeagueMembership.findOne({ leagueId, userId }).lean();
-  if (existing) throw new AppError("CONFLICT", "Already enrolled in this league");
+  if (existing)
+    throw new AppError("CONFLICT", "Already enrolled in this league");
 
   // Process entry fee if applicable
   try {
@@ -173,7 +183,11 @@ export async function join(
         );
       });
     } else {
-      await LeagueMembership.create({ leagueId, userId, enrolledAt: new Date() });
+      await LeagueMembership.create({
+        leagueId,
+        userId,
+        enrolledAt: new Date(),
+      });
       await FantasyTeam.create({
         leagueId,
         userId,
@@ -204,7 +218,10 @@ export async function getStandings(
 
   // Visibility check for private leagues
   if (league.type === LeagueType.PRIVATE && !isAdmin) {
-    const membership = await LeagueMembership.findOne({ leagueId, userId }).lean();
+    const membership = await LeagueMembership.findOne({
+      leagueId,
+      userId,
+    }).lean();
     if (!membership) throw new AppError("NOT_FOUND", "League not found");
   }
 

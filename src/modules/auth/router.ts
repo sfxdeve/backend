@@ -1,7 +1,15 @@
-import { Router, type Request, type Response, type NextFunction } from "express";
+import {
+  Router,
+  type Request,
+  type Response,
+  type NextFunction,
+} from "express";
 import { validateRequest } from "../../middlewares/validate-request.js";
 import { requireAuth } from "../../middlewares/auth.js";
-import { authRateLimiter, otpRateLimiter } from "../../middlewares/rate-limit.js";
+import {
+  authRateLimiter,
+  otpRateLimiter,
+} from "../../middlewares/rate-limit.js";
 import { env } from "../../lib/env.js";
 import { AppError } from "../../lib/errors.js";
 import * as service from "./service.js";
@@ -52,7 +60,10 @@ router.post(
     const result = await service.login(req.body, userAgent);
     res
       .cookie(REFRESH_COOKIE, result.refreshToken, COOKIE_OPTS)
-      .json({ success: true, data: { accessToken: result.accessToken, user: result.user } });
+      .json({
+        success: true,
+        data: { accessToken: result.accessToken, user: result.user },
+      });
   },
 );
 
@@ -72,14 +83,12 @@ router.post(
   },
 );
 
-router.post(
-  "/logout",
-  requireAuth,
-  async (req: Request, res: Response) => {
-    await service.logout(req.auth!.sessionId);
-    res.clearCookie(REFRESH_COOKIE).json({ success: true, data: { message: "Logged out" } });
-  },
-);
+router.post("/logout", requireAuth, async (req: Request, res: Response) => {
+  await service.logout(req.auth!.sessionId);
+  res
+    .clearCookie(REFRESH_COOKIE)
+    .json({ success: true, data: { message: "Logged out" } });
+});
 
 router.post(
   "/forgot-password",

@@ -39,10 +39,7 @@ const AthleteMatchPointsSchema = new Schema<IAthleteMatchPoints>(
   { timestamps: true },
 );
 
-AthleteMatchPointsSchema.index(
-  { matchId: 1, athleteId: 1 },
-  { unique: true },
-);
+AthleteMatchPointsSchema.index({ matchId: 1, athleteId: 1 }, { unique: true });
 AthleteMatchPointsSchema.index({ tournamentId: 1, athleteId: 1 });
 
 export const AthleteMatchPoints = mongoose.model<IAthleteMatchPoints>(

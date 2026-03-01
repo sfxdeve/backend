@@ -8,7 +8,8 @@ export async function getAuditLog(query: AuditLogQueryParamsType) {
   if (query.entity) filter.entity = query.entity;
   if (query.from || query.to) {
     filter.createdAt = {};
-    if (query.from) (filter.createdAt as Record<string, unknown>).$gte = query.from;
+    if (query.from)
+      (filter.createdAt as Record<string, unknown>).$gte = query.from;
     if (query.to) (filter.createdAt as Record<string, unknown>).$lte = query.to;
   }
 
@@ -23,5 +24,8 @@ export async function getAuditLog(query: AuditLogQueryParamsType) {
     AdminAuditLog.countDocuments(filter),
   ]);
 
-  return { items, meta: paginationMeta(total, { page: query.page, limit: query.limit }) };
+  return {
+    items,
+    meta: paginationMeta(total, { page: query.page, limit: query.limit }),
+  };
 }

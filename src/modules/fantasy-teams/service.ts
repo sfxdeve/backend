@@ -18,14 +18,21 @@ import type {
 
 async function getTeamOrThrow(leagueId: string, userId: string) {
   const team = await FantasyTeam.findOne({ leagueId, userId }).lean();
-  if (!team) throw new AppError("NOT_FOUND", "Fantasy team not found. Join the league first.");
+  if (!team)
+    throw new AppError(
+      "NOT_FOUND",
+      "Fantasy team not found. Join the league first.",
+    );
   return team;
 }
 
 export async function getTeam(leagueId: string, userId: string) {
   const team = await getTeamOrThrow(leagueId, userId);
   const roster = await Roster.find({ fantasyTeamId: team._id })
-    .populate("athleteId", "firstName lastName gender fantacoinCost averageFantasyScore pictureUrl")
+    .populate(
+      "athleteId",
+      "firstName lastName gender fantacoinCost averageFantasyScore pictureUrl",
+    )
     .lean();
   return { team, roster };
 }
@@ -41,9 +48,14 @@ export async function submitRoster(
   const team = await getTeamOrThrow(leagueId, userId);
 
   // Check no existing roster
-  const existingCount = await Roster.countDocuments({ fantasyTeamId: team._id });
+  const existingCount = await Roster.countDocuments({
+    fantasyTeamId: team._id,
+  });
   if (existingCount > 0) {
-    throw new AppError("CONFLICT", "Roster already submitted. Use market window to change athletes.");
+    throw new AppError(
+      "CONFLICT",
+      "Roster already submitted. Use market window to change athletes.",
+    );
   }
 
   // Validate count matches league setting
@@ -76,7 +88,9 @@ export async function submitRoster(
   }
 
   // §13.5: gender isolation — all athletes must match championship gender
-  const championship = await Championship.findById(league.championshipId).lean();
+  const championship = await Championship.findById(
+    league.championshipId,
+  ).lean();
   if (championship) {
     for (const athlete of athletes) {
       if (athlete.gender !== championship.gender) {
@@ -129,19 +143,27 @@ export async function updateRoster(
   if (!league) throw new AppError("NOT_FOUND", "League not found");
 
   if (!league.marketEnabled) {
-    throw new AppError("FORBIDDEN", "Market windows are not enabled for this league");
+    throw new AppError(
+      "FORBIDDEN",
+      "Market windows are not enabled for this league",
+    );
   }
 
   const team = await getTeamOrThrow(leagueId, userId);
 
   // Get current roster athletes for sell validation
   const currentRoster = await Roster.find({ fantasyTeamId: team._id }).lean();
-  const ownedAthleteIds = new Set(currentRoster.map((r) => String(r.athleteId)));
+  const ownedAthleteIds = new Set(
+    currentRoster.map((r) => String(r.athleteId)),
+  );
 
   // Validate sell list
   for (const athleteId of body.sell) {
     if (!ownedAthleteIds.has(athleteId)) {
-      throw new AppError("UNPROCESSABLE", `Cannot sell athlete ${athleteId}: not in roster`);
+      throw new AppError(
+        "UNPROCESSABLE",
+        `Cannot sell athlete ${athleteId}: not in roster`,
+      );
     }
   }
 
@@ -154,7 +176,10 @@ export async function updateRoster(
     }
     for (const a of buyAthletes) {
       if (String(a.championshipId) !== String(league.championshipId)) {
-        throw new AppError("UNPROCESSABLE", `Athlete not in league's championship`);
+        throw new AppError(
+          "UNPROCESSABLE",
+          `Athlete not in league's championship`,
+        );
       }
     }
     buyCost = buyAthletes.reduce((sum, a) => sum + a.fantacoinCost, 0);
@@ -167,13 +192,20 @@ export async function updateRoster(
 
   const netCost = buyCost - sellProceeds;
   if (team.fantacoinsRemaining - netCost < 0) {
-    throw new AppError("UNPROCESSABLE", `Insufficient budget. Net cost: ${netCost}, available: ${team.fantacoinsRemaining}`);
+    throw new AppError(
+      "UNPROCESSABLE",
+      `Insufficient budget. Net cost: ${netCost}, available: ${team.fantacoinsRemaining}`,
+    );
   }
 
   // Roster size check
-  const newRosterSize = currentRoster.length - body.sell.length + body.buy.length;
+  const newRosterSize =
+    currentRoster.length - body.sell.length + body.buy.length;
   if (newRosterSize !== league.rosterSize) {
-    throw new AppError("UNPROCESSABLE", `Resulting roster size ${newRosterSize} must equal ${league.rosterSize}`);
+    throw new AppError(
+      "UNPROCESSABLE",
+      `Resulting roster size ${newRosterSize} must equal ${league.rosterSize}`,
+    );
   }
 
   await withMongoTransaction(async (session) => {
@@ -223,7 +255,10 @@ export async function getLineup(
   }
 
   const slots = await LineupSlot.find({ lineupId: lineup._id })
-    .populate("athleteId", "firstName lastName fantacoinCost averageFantasyScore pictureUrl")
+    .populate(
+      "athleteId",
+      "firstName lastName fantacoinCost averageFantasyScore pictureUrl",
+    )
     .lean();
 
   return { lineup, slots };
@@ -249,7 +284,10 @@ export async function submitLineup(
     tournament.status === TournamentStatus.ONGOING ||
     tournament.status === TournamentStatus.COMPLETED
   ) {
-    throw new AppError("CONFLICT", "Cannot submit lineup — tournament lineup has been locked");
+    throw new AppError(
+      "CONFLICT",
+      "Cannot submit lineup — tournament lineup has been locked",
+    );
   }
 
   // Check lineup not locked
@@ -259,7 +297,10 @@ export async function submitLineup(
   }).lean();
 
   if (existingLineup?.isLocked) {
-    throw new AppError("CONFLICT", "Lineup is locked. No changes allowed after Thursday lock.");
+    throw new AppError(
+      "CONFLICT",
+      "Lineup is locked. No changes allowed after Thursday lock.",
+    );
   }
 
   // Validate slot counts
@@ -287,14 +328,22 @@ export async function submitLineup(
 
   for (const slot of body.slots) {
     if (!ownedIds.has(slot.athleteId)) {
-      throw new AppError("UNPROCESSABLE", `Athlete ${slot.athleteId} is not in your roster`);
+      throw new AppError(
+        "UNPROCESSABLE",
+        `Athlete ${slot.athleteId} is not in your roster`,
+      );
     }
   }
 
   // Upsert lineup
   const lineup = await Lineup.findOneAndUpdate(
     { fantasyTeamId: team._id, tournamentId },
-    { fantasyTeamId: team._id, tournamentId, isLocked: false, autoGenerated: false },
+    {
+      fantasyTeamId: team._id,
+      tournamentId,
+      isLocked: false,
+      autoGenerated: false,
+    },
     { upsert: true, new: true },
   );
 

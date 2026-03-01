@@ -30,7 +30,10 @@ export async function list(query: AthleteQueryParamsType) {
     Athlete.countDocuments(filter),
   ]);
 
-  return { items, meta: paginationMeta(total, { page: query.page, limit: query.limit }) };
+  return {
+    items,
+    meta: paginationMeta(total, { page: query.page, limit: query.limit }),
+  };
 }
 
 export async function getById(id: string) {

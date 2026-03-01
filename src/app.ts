@@ -1,8 +1,4 @@
-import express, {
-  type Express,
-  type Request,
-  type Response,
-} from "express";
+import express, { type Express, type Request, type Response } from "express";
 import crypto from "node:crypto";
 import helmet from "helmet";
 import cors from "cors";
@@ -14,9 +10,7 @@ import { env } from "./lib/env.js";
 import { logger } from "./lib/logger.js";
 import { connectDb, disconnectDb, isDbConnected } from "./lib/db.js";
 import { seedAdmin, seedCreditPacks } from "./lib/seed.js";
-import {
-  defaultRateLimiter,
-} from "./middlewares/rate-limit.js";
+import { defaultRateLimiter } from "./middlewares/rate-limit.js";
 import { notFoundHandler, errorHandler } from "./middlewares/error-handler.js";
 
 // Routers
@@ -44,7 +38,9 @@ export async function bootstrap(): Promise<{
   app.use(helmet());
 
   // CORS
-  const corsOrigins = env.CORS_ORIGINS.split(",").map((o) => o.trim()).filter(Boolean);
+  const corsOrigins = env.CORS_ORIGINS.split(",")
+    .map((o) => o.trim())
+    .filter(Boolean);
   app.use(
     cors({
       origin: corsOrigins,

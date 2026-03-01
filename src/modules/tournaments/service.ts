@@ -46,7 +46,10 @@ export async function list(query: TournamentQueryParamsType) {
     Tournament.countDocuments(filter),
   ]);
 
-  return { items, meta: paginationMeta(total, { page: query.page, limit: query.limit }) };
+  return {
+    items,
+    meta: paginationMeta(total, { page: query.page, limit: query.limit }),
+  };
 }
 
 export async function getById(id: string) {
@@ -91,8 +94,14 @@ export async function getPairs(tournamentId: string) {
   if (!doc) throw new AppError("NOT_FOUND", "Tournament not found");
 
   return TournamentPair.find({ tournamentId })
-    .populate("athleteAId", "firstName lastName gender fantacoinCost averageFantasyScore pictureUrl")
-    .populate("athleteBId", "firstName lastName gender fantacoinCost averageFantasyScore pictureUrl")
+    .populate(
+      "athleteAId",
+      "firstName lastName gender fantacoinCost averageFantasyScore pictureUrl",
+    )
+    .populate(
+      "athleteBId",
+      "firstName lastName gender fantacoinCost averageFantasyScore pictureUrl",
+    )
     .lean();
 }
 
@@ -113,20 +122,32 @@ export async function addPair(tournamentId: string, body: AddPairBodyType) {
     throw new AppError("NOT_FOUND", "One or both athletes not found");
   }
   if (String(athleteA.championshipId) !== String(doc.championshipId)) {
-    throw new AppError("BAD_REQUEST", "Athlete A does not belong to this tournament's championship");
+    throw new AppError(
+      "BAD_REQUEST",
+      "Athlete A does not belong to this tournament's championship",
+    );
   }
   if (String(athleteB.championshipId) !== String(doc.championshipId)) {
-    throw new AppError("BAD_REQUEST", "Athlete B does not belong to this tournament's championship");
+    throw new AppError(
+      "BAD_REQUEST",
+      "Athlete B does not belong to this tournament's championship",
+    );
   }
 
   // §13.5: gender isolation — both athletes must match championship gender
   const championship = await Championship.findById(doc.championshipId).lean();
   if (!championship) throw new AppError("NOT_FOUND", "Championship not found");
   if (athleteA.gender !== championship.gender) {
-    throw new AppError("BAD_REQUEST", "Athlete A gender does not match championship gender");
+    throw new AppError(
+      "BAD_REQUEST",
+      "Athlete A gender does not match championship gender",
+    );
   }
   if (athleteB.gender !== championship.gender) {
-    throw new AppError("BAD_REQUEST", "Athlete B gender does not match championship gender");
+    throw new AppError(
+      "BAD_REQUEST",
+      "Athlete B gender does not match championship gender",
+    );
   }
 
   return TournamentPair.create({ tournamentId, ...body });
@@ -199,7 +220,10 @@ export async function lockLineups(tournamentId: string, adminId: string) {
     tournament.status === TournamentStatus.ONGOING ||
     tournament.status === TournamentStatus.COMPLETED
   ) {
-    throw new AppError("CONFLICT", "Tournament is already locked or has started");
+    throw new AppError(
+      "CONFLICT",
+      "Tournament is already locked or has started",
+    );
   }
 
   const now = new Date();
@@ -214,7 +238,10 @@ export async function lockLineups(tournamentId: string, adminId: string) {
     entity: "Tournament",
     entityId: tournamentId,
     before: { status: tournament.status } as Record<string, unknown>,
-    after: { status: TournamentStatus.LOCKED, lineupLockAt: now } as Record<string, unknown>,
+    after: { status: TournamentStatus.LOCKED, lineupLockAt: now } as Record<
+      string,
+      unknown
+    >,
   });
 
   await runLineupLockForTournament(tournamentId);
@@ -321,7 +348,9 @@ async function applyAutoSubstitution(
   lineupId: string,
   registeredAthleteIds: Set<string>,
 ) {
-  const slots = await LineupSlot.find({ lineupId }).sort({ benchOrder: 1 }).lean();
+  const slots = await LineupSlot.find({ lineupId })
+    .sort({ benchOrder: 1 })
+    .lean();
 
   const starters = slots.filter((s) => s.role === LineupRole.STARTER);
   const bench = slots

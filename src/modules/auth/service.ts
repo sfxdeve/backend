@@ -3,7 +3,11 @@ import { Wallet } from "../../models/Credits.js";
 import { OtpPurpose } from "../../models/enums.js";
 import { AppError } from "../../lib/errors.js";
 import { hashSecret, compareSecret } from "../../lib/hash.js";
-import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../../lib/jwt.js";
+import {
+  signAccessToken,
+  signRefreshToken,
+  verifyRefreshToken,
+} from "../../lib/jwt.js";
 import {
   createSession,
   revokeSession,
@@ -47,7 +51,10 @@ export async function register(body: RegisterBodyType) {
     `Your verification code is: ${code}\n\nThis code expires in 10 minutes.`,
   );
 
-  return { message: "Registration successful. Check your email for a verification code." };
+  return {
+    message:
+      "Registration successful. Check your email for a verification code.",
+  };
 }
 
 export async function verifyEmail(body: VerifyEmailBodyType) {
@@ -55,7 +62,11 @@ export async function verifyEmail(body: VerifyEmailBodyType) {
   if (!user) throw new AppError("NOT_FOUND", "User not found");
   if (user.isVerified) throw new AppError("CONFLICT", "Email already verified");
 
-  const valid = await verifyOtp(String(user._id), OtpPurpose.VERIFY_EMAIL, body.code);
+  const valid = await verifyOtp(
+    String(user._id),
+    OtpPurpose.VERIFY_EMAIL,
+    body.code,
+  );
   if (!valid) throw new AppError("BAD_REQUEST", "Invalid or expired code");
 
   user.isVerified = true;
@@ -72,7 +83,10 @@ export async function login(body: LoginBodyType, userAgent?: string) {
   if (!match) throw new AppError("UNAUTHORIZED", "Invalid credentials");
 
   if (!user.isVerified) {
-    throw new AppError("FORBIDDEN", "Please verify your email before logging in");
+    throw new AppError(
+      "FORBIDDEN",
+      "Please verify your email before logging in",
+    );
   }
   if (user.isBlocked) {
     throw new AppError("FORBIDDEN", "Your account has been suspended");
@@ -84,7 +98,16 @@ export async function login(body: LoginBodyType, userAgent?: string) {
   const accessToken = signAccessToken(payload);
   const refreshToken = signRefreshToken({ sub: String(user._id), sessionId });
 
-  return { accessToken, refreshToken, user: { id: String(user._id), name: user.name, email: user.email, role: user.role } };
+  return {
+    accessToken,
+    refreshToken,
+    user: {
+      id: String(user._id),
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    },
+  };
 }
 
 export async function refreshTokens(token: string, userAgent?: string) {
@@ -101,10 +124,17 @@ export async function refreshTokens(token: string, userAgent?: string) {
   // Rotate: revoke old session, create new
   await revokeSession(payload.sessionId);
   const newSessionId = await createSession(String(user._id), userAgent);
-  const newPayload = { sub: String(user._id), role: user.role, sessionId: newSessionId };
+  const newPayload = {
+    sub: String(user._id),
+    role: user.role,
+    sessionId: newSessionId,
+  };
 
   const accessToken = signAccessToken(newPayload);
-  const refreshToken = signRefreshToken({ sub: String(user._id), sessionId: newSessionId });
+  const refreshToken = signRefreshToken({
+    sub: String(user._id),
+    sessionId: newSessionId,
+  });
 
   return { accessToken, refreshToken };
 }
@@ -117,7 +147,8 @@ export async function logout(sessionId: string) {
 export async function forgotPassword(body: ForgotPasswordBodyType) {
   const user = await User.findOne({ email: body.email }).lean();
   // Always return success to avoid email enumeration
-  if (!user) return { message: "If that email exists, a reset code has been sent" };
+  if (!user)
+    return { message: "If that email exists, a reset code has been sent" };
 
   const code = await createOtp(String(user._id), OtpPurpose.RESET_PASSWORD);
   await sendEmail(
@@ -133,7 +164,11 @@ export async function resetPassword(body: ResetPasswordBodyType) {
   const user = await User.findOne({ email: body.email });
   if (!user) throw new AppError("NOT_FOUND", "User not found");
 
-  const valid = await verifyOtp(String(user._id), OtpPurpose.RESET_PASSWORD, body.code);
+  const valid = await verifyOtp(
+    String(user._id),
+    OtpPurpose.RESET_PASSWORD,
+    body.code,
+  );
   if (!valid) throw new AppError("BAD_REQUEST", "Invalid or expired code");
 
   user.passwordHash = await hashSecret(body.password);

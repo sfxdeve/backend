@@ -1,6 +1,9 @@
 import { Championship } from "../../models/RealWorld.js";
 import { AppError } from "../../lib/errors.js";
-import type { CreateChampionshipBodyType, UpdateChampionshipBodyType } from "./schema.js";
+import type {
+  CreateChampionshipBodyType,
+  UpdateChampionshipBodyType,
+} from "./schema.js";
 
 export async function list() {
   return Championship.find().sort({ seasonYear: -1, name: 1 }).lean();

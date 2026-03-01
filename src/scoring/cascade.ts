@@ -140,7 +140,9 @@ export async function runCascade(matchId: string): Promise<void> {
     .lean();
 
   const lineupIds = lockedLineups.map((l) => l._id);
-  const fantasyTeamIds = [...new Set(lockedLineups.map((l) => String(l.fantasyTeamId)))];
+  const fantasyTeamIds = [
+    ...new Set(lockedLineups.map((l) => String(l.fantasyTeamId))),
+  ];
 
   if (lineupIds.length === 0) return;
 
@@ -159,7 +161,10 @@ export async function runCascade(matchId: string): Promise<void> {
   // ── Step 5: Recalculate FantasyTeam.totalPoints ──────────────
   for (const ftId of fantasyTeamIds) {
     // Sum all starter slot points across ALL locked lineups for this team (all tournaments = season total)
-    const allLineupDocs = await Lineup.find({ fantasyTeamId: ftId, isLocked: true })
+    const allLineupDocs = await Lineup.find({
+      fantasyTeamId: ftId,
+      isLocked: true,
+    })
       .select("_id")
       .lean();
     const allLineupIds = allLineupDocs.map((l) => l._id);
@@ -228,7 +233,10 @@ export async function runCascade(matchId: string): Promise<void> {
         $or: [{ role: LineupRole.STARTER }, { substitutedIn: true }],
       }).lean();
 
-      const gameweekPts = slots.reduce((sum, s) => sum + (s.pointsScored ?? 0), 0);
+      const gameweekPts = slots.reduce(
+        (sum, s) => sum + (s.pointsScored ?? 0),
+        0,
+      );
 
       // Get cumulative points for prior tournaments
       const priorTotal = await GameweekStanding.aggregate([
@@ -236,7 +244,9 @@ export async function runCascade(matchId: string): Promise<void> {
           $match: {
             leagueId: league._id,
             fantasyTeamId: team._id,
-            tournamentId: { $ne: new mongoose.Types.ObjectId(String(match.tournamentId)) },
+            tournamentId: {
+              $ne: new mongoose.Types.ObjectId(String(match.tournamentId)),
+            },
           },
         },
         { $group: { _id: null, total: { $sum: "$gameweekPoints" } } },
@@ -279,5 +289,8 @@ export async function runCascade(matchId: string): Promise<void> {
     }
   }
 
-  logger.info({ matchId, tournamentId: String(match.tournamentId) }, "Cascade complete");
+  logger.info(
+    { matchId, tournamentId: String(match.tournamentId) },
+    "Cascade complete",
+  );
 }

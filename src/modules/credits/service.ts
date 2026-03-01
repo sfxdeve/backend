@@ -111,7 +111,9 @@ export async function handleWebhook(rawBody: Buffer, signature: string) {
     if (credits <= 0) return { received: true };
 
     await withMongoTransaction(async (dbSession) => {
-      const wallet = await Wallet.findById(existing.walletId).session(dbSession);
+      const wallet = await Wallet.findById(existing.walletId).session(
+        dbSession,
+      );
       if (!wallet) return;
 
       const newBalance = wallet.balance + credits;
@@ -174,7 +176,10 @@ export async function togglePack(id: string) {
   return pack;
 }
 
-export async function grantCredits(body: GrantCreditsBodyType, adminId: string) {
+export async function grantCredits(
+  body: GrantCreditsBodyType,
+  adminId: string,
+) {
   const user = await User.findById(body.userId).lean();
   if (!user) throw new AppError("NOT_FOUND", "User not found");
 

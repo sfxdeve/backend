@@ -41,7 +41,11 @@ router.patch(
   requireAdmin,
   validateRequest({ body: UpdateTournamentBody }),
   async (req: Request, res: Response) => {
-    const data = await service.update(req.params.id as string, req.body, req.auth!.userId);
+    const data = await service.update(
+      req.params.id as string,
+      req.body,
+      req.auth!.userId,
+    );
     res.json({ success: true, data });
   },
 );
@@ -65,19 +69,21 @@ router.delete(
   "/:id/pairs/:pairId",
   requireAdmin,
   async (req: Request, res: Response) => {
-    await service.removePair(req.params.id as string, req.params.pairId as string);
+    await service.removePair(
+      req.params.id as string,
+      req.params.pairId as string,
+    );
     res.json({ success: true, data: { message: "Pair removed" } });
   },
 );
 
-router.post(
-  "/:id/lock",
-  requireAdmin,
-  async (req: Request, res: Response) => {
-    const data = await service.lockLineups(req.params.id as string, req.auth!.userId);
-    res.json({ success: true, data });
-  },
-);
+router.post("/:id/lock", requireAdmin, async (req: Request, res: Response) => {
+  const data = await service.lockLineups(
+    req.params.id as string,
+    req.auth!.userId,
+  );
+  res.json({ success: true, data });
+});
 
 router.get("/:id/bracket", requireAuth, async (req: Request, res: Response) => {
   const data = await service.getBracket(req.params.id as string);

@@ -19,7 +19,11 @@ router.get(
   validateRequest({ query: LeagueQueryParams }),
   async (req: Request, res: Response) => {
     const isAdmin = req.auth!.role === "ADMIN";
-    const data = await service.list(req.query as unknown as LeagueQueryParamsType, req.auth!.userId, isAdmin);
+    const data = await service.list(
+      req.query as unknown as LeagueQueryParamsType,
+      req.auth!.userId,
+      isAdmin,
+    );
     res.json({ success: true, ...data });
   },
 );
@@ -36,7 +40,11 @@ router.post(
 
 router.get("/:id", requireAuth, async (req: Request, res: Response) => {
   const isAdmin = req.auth!.role === "ADMIN";
-  const data = await service.getById(req.params.id as string, req.auth!.userId, isAdmin);
+  const data = await service.getById(
+    req.params.id as string,
+    req.auth!.userId,
+    isAdmin,
+  );
   res.json({ success: true, data });
 });
 
@@ -45,7 +53,11 @@ router.post(
   requireAuth,
   validateRequest({ body: JoinLeagueBody }),
   async (req: Request, res: Response) => {
-    const data = await service.join(req.params.id as string, req.auth!.userId, req.body);
+    const data = await service.join(
+      req.params.id as string,
+      req.auth!.userId,
+      req.body,
+    );
     res.json({ success: true, data });
   },
 );

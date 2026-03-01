@@ -11,7 +11,9 @@ router.get(
   requireAdmin,
   validateRequest({ query: AuditLogQueryParams }),
   async (req: Request, res: Response) => {
-    const data = await service.getAuditLog(req.query as unknown as AuditLogQueryParamsType);
+    const data = await service.getAuditLog(
+      req.query as unknown as AuditLogQueryParamsType,
+    );
     res.json({ success: true, ...data });
   },
 );
