@@ -228,7 +228,7 @@ const collection = {
           request: {
             method: "GET",
             header: [],
-            url: "{{baseUrl}}{{apiPrefix}}/athletes?championshipId={{championshipId}}&gender=M&page=1&limit=20",
+            url: "{{baseUrl}}{{apiPrefix}}/athletes",
           },
         },
         {
@@ -273,7 +273,7 @@ const collection = {
           request: {
             method: "GET",
             header: [],
-            url: "{{baseUrl}}{{apiPrefix}}/tournaments?championshipId={{championshipId}}&status=UPCOMING&page=1&limit=20",
+            url: "{{baseUrl}}{{apiPrefix}}/tournaments",
           },
         },
         {
@@ -370,7 +370,7 @@ const collection = {
           request: {
             method: "GET",
             header: [],
-            url: "{{baseUrl}}{{apiPrefix}}/matches?tournamentId={{tournamentId}}&round=POOL&status=SCHEDULED",
+            url: "{{baseUrl}}{{apiPrefix}}/matches",
           },
         },
         {
@@ -415,7 +415,7 @@ const collection = {
           request: {
             method: "GET",
             header: [],
-            url: "{{baseUrl}}{{apiPrefix}}/leagues?type=PUBLIC&status=OPEN&championshipId={{championshipId}}&page=1&limit=20",
+            url: "{{baseUrl}}{{apiPrefix}}/leagues",
           },
         },
         {
@@ -455,7 +455,7 @@ const collection = {
           request: {
             method: "GET",
             header: [],
-            url: "{{baseUrl}}{{apiPrefix}}/leagues/{{leagueId}}/standings?tournamentId={{tournamentId}}",
+            url: "{{baseUrl}}{{apiPrefix}}/leagues/{{leagueId}}/standings",
           },
         },
       ],
@@ -545,7 +545,7 @@ const collection = {
           request: {
             method: "GET",
             header: [],
-            url: "{{baseUrl}}{{apiPrefix}}/credits/wallet?page=1&limit=20",
+            url: "{{baseUrl}}{{apiPrefix}}/credits/wallet",
           },
         },
         {
@@ -608,7 +608,7 @@ const collection = {
           request: {
             method: "GET",
             header: [],
-            url: "{{baseUrl}}{{apiPrefix}}/admin/audit-log?adminId=&entity=&from=&to=&page=1&limit=20",
+            url: "{{baseUrl}}{{apiPrefix}}/admin/audit-log",
           },
         },
       ],
