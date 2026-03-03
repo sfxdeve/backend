@@ -21,5 +21,7 @@ export const SubmitLineupBody = z.object({
 });
 
 export type SubmitRosterBodyType = z.infer<typeof SubmitRosterBody>;
+
 export type UpdateRosterBodyType = z.infer<typeof UpdateRosterBody>;
+
 export type SubmitLineupBodyType = z.infer<typeof SubmitLineupBody>;

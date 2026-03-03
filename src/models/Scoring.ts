@@ -1,9 +1,5 @@
 import mongoose, { Document, Schema, Types } from "mongoose";
 
-// ── AthleteMatchPoints ────────────────────────────────────────
-// Per-athlete scoring record for a specific match.
-// Unique per (matchId, athleteId) — upserted on each cascade run.
-
 export interface IAthleteMatchPoints extends Document {
   matchId: Types.ObjectId;
   tournamentId: Types.ObjectId;

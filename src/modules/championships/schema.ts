@@ -10,4 +10,5 @@ export const CreateChampionshipBody = z.object({
 export const UpdateChampionshipBody = CreateChampionshipBody.partial();
 
 export type CreateChampionshipBodyType = z.infer<typeof CreateChampionshipBody>;
+
 export type UpdateChampionshipBodyType = z.infer<typeof UpdateChampionshipBody>;

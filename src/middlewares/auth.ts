@@ -9,13 +9,17 @@ export async function requireAuth(
   next: NextFunction,
 ): Promise<void> {
   const token = extractBearerToken(req);
+
   if (!token) {
     next(new AppError("UNAUTHORIZED", "Missing or invalid authorization"));
     return;
   }
+
   try {
     const payload = verifyAccessToken(token);
+
     const valid = await validateSession(payload.sessionId);
+
     if (!valid) {
       next(new AppError("UNAUTHORIZED", "Session invalid or revoked"));
       return;
@@ -25,6 +29,7 @@ export async function requireAuth(
       role: payload.role,
       sessionId: payload.sessionId,
     };
+
     next();
   } catch (e) {
     next(e);

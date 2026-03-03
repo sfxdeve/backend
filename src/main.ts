@@ -27,6 +27,7 @@ async function run(): Promise<void> {
   };
 
   process.on("SIGINT", handleSignal);
+
   process.on("SIGTERM", handleSignal);
 
   process.on("unhandledRejection", (reason, promise) => {
@@ -41,5 +42,6 @@ async function run(): Promise<void> {
 
 run().catch((error) => {
   logger.error({ error }, "Unhandled startup error");
+
   process.exit(1);
 });

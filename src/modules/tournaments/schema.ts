@@ -27,6 +27,7 @@ export const UpdateTournamentBody = z
       if (data.startDate !== undefined && data.endDate !== undefined) {
         return data.endDate >= data.startDate;
       }
+
       return true;
     },
     { message: "endDate must be on or after startDate", path: ["endDate"] },
@@ -48,6 +49,9 @@ export const TournamentQueryParams = z.object({
 });
 
 export type CreateTournamentBodyType = z.infer<typeof CreateTournamentBody>;
+
 export type UpdateTournamentBodyType = z.infer<typeof UpdateTournamentBody>;
+
 export type AddPairBodyType = z.infer<typeof AddPairBody>;
+
 export type TournamentQueryParamsType = z.infer<typeof TournamentQueryParams>;

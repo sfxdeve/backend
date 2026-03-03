@@ -1,12 +1,9 @@
 import mongoose, { Document, Schema, Types } from "mongoose";
 
-// ── AdminAuditLog ─────────────────────────────────────────────
-// Immutable record of every admin data override.
-
 export interface IAdminAuditLog extends Document {
   adminId: Types.ObjectId;
-  action: string; // e.g. "UPDATE_MATCH", "UPDATE_ATHLETE"
-  entity: string; // collection name
+  action: string;
+  entity: string;
   entityId?: Types.ObjectId;
   before?: Record<string, unknown>;
   after?: Record<string, unknown>;

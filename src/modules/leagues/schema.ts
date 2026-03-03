@@ -39,6 +39,9 @@ export const StandingsQueryParams = z.object({
 });
 
 export type CreateLeagueBodyType = z.infer<typeof CreateLeagueBody>;
+
 export type JoinLeagueBodyType = z.infer<typeof JoinLeagueBody>;
+
 export type LeagueQueryParamsType = z.infer<typeof LeagueQueryParams>;
+
 export type StandingsQueryParamsType = z.infer<typeof StandingsQueryParams>;

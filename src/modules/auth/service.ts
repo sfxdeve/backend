@@ -27,24 +27,26 @@ import type {
 
 export async function register(body: RegisterBodyType) {
   const existing = await User.findOne({ email: body.email }).lean();
+
   if (existing) {
     throw new AppError("CONFLICT", "Email already registered");
   }
 
   const passwordHash = await hashSecret(body.password);
 
-  // Create user and wallet atomically — orphaned User without Wallet must not happen
   const user = await withMongoTransaction(async (session) => {
     const [created] = await User.create(
       [{ name: body.name, email: body.email, passwordHash }],
       { session },
     );
+
     await Wallet.create([{ userId: created._id }], { session });
+
     return created;
   });
 
-  // Send verification OTP
   const code = await createOtp(String(user._id), OtpPurpose.VERIFY_EMAIL);
+
   await sendEmail(
     user.email,
     "Verify your FantaBeach account",
@@ -59,17 +61,27 @@ export async function register(body: RegisterBodyType) {
 
 export async function verifyEmail(body: VerifyEmailBodyType) {
   const user = await User.findOne({ email: body.email });
-  if (!user) throw new AppError("NOT_FOUND", "User not found");
-  if (user.isVerified) throw new AppError("CONFLICT", "Email already verified");
+
+  if (!user) {
+    throw new AppError("NOT_FOUND", "User not found");
+  }
+
+  if (user.isVerified) {
+    throw new AppError("CONFLICT", "Email already verified");
+  }
 
   const valid = await verifyOtp(
     String(user._id),
     OtpPurpose.VERIFY_EMAIL,
     body.code,
   );
-  if (!valid) throw new AppError("BAD_REQUEST", "Invalid or expired code");
+
+  if (!valid) {
+    throw new AppError("BAD_REQUEST", "Invalid or expired code");
+  }
 
   user.isVerified = true;
+
   await user.save();
 
   return { message: "Email verified successfully" };
@@ -77,10 +89,16 @@ export async function verifyEmail(body: VerifyEmailBodyType) {
 
 export async function login(body: LoginBodyType, userAgent?: string) {
   const user = await User.findOne({ email: body.email });
-  if (!user) throw new AppError("UNAUTHORIZED", "Invalid credentials");
+
+  if (!user) {
+    throw new AppError("UNAUTHORIZED", "Invalid credentials");
+  }
 
   const match = await compareSecret(body.password, user.passwordHash);
-  if (!match) throw new AppError("UNAUTHORIZED", "Invalid credentials");
+
+  if (!match) {
+    throw new AppError("UNAUTHORIZED", "Invalid credentials");
+  }
 
   if (!user.isVerified) {
     throw new AppError(
@@ -88,6 +106,7 @@ export async function login(body: LoginBodyType, userAgent?: string) {
       "Please verify your email before logging in",
     );
   }
+
   if (user.isBlocked) {
     throw new AppError("FORBIDDEN", "Your account has been suspended");
   }
@@ -114,15 +133,19 @@ export async function refreshTokens(token: string, userAgent?: string) {
   const payload = verifyRefreshToken(token);
 
   const valid = await validateSession(payload.sessionId);
-  if (!valid) throw new AppError("UNAUTHORIZED", "Session invalid or expired");
+
+  if (!valid) {
+    throw new AppError("UNAUTHORIZED", "Session invalid or expired");
+  }
 
   const user = await User.findById(payload.sub).lean();
+
   if (!user || user.isBlocked) {
     throw new AppError("UNAUTHORIZED", "User not found or blocked");
   }
 
-  // Rotate: revoke old session, create new
   await revokeSession(payload.sessionId);
+
   const newSessionId = await createSession(String(user._id), userAgent);
   const newPayload = {
     sub: String(user._id),
@@ -141,16 +164,19 @@ export async function refreshTokens(token: string, userAgent?: string) {
 
 export async function logout(sessionId: string) {
   await revokeSession(sessionId);
+
   return { message: "Logged out successfully" };
 }
 
 export async function forgotPassword(body: ForgotPasswordBodyType) {
   const user = await User.findOne({ email: body.email }).lean();
-  // Always return success to avoid email enumeration
-  if (!user)
+
+  if (!user) {
     return { message: "If that email exists, a reset code has been sent" };
+  }
 
   const code = await createOtp(String(user._id), OtpPurpose.RESET_PASSWORD);
+
   await sendEmail(
     user.email,
     "Reset your FantaBeach password",
@@ -162,16 +188,23 @@ export async function forgotPassword(body: ForgotPasswordBodyType) {
 
 export async function resetPassword(body: ResetPasswordBodyType) {
   const user = await User.findOne({ email: body.email });
-  if (!user) throw new AppError("NOT_FOUND", "User not found");
+
+  if (!user) {
+    throw new AppError("NOT_FOUND", "User not found");
+  }
 
   const valid = await verifyOtp(
     String(user._id),
     OtpPurpose.RESET_PASSWORD,
     body.code,
   );
-  if (!valid) throw new AppError("BAD_REQUEST", "Invalid or expired code");
+
+  if (!valid) {
+    throw new AppError("BAD_REQUEST", "Invalid or expired code");
+  }
 
   user.passwordHash = await hashSecret(body.password);
+
   await user.save();
 
   await revokeAllUserSessions(String(user._id));

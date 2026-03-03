@@ -1,14 +1,11 @@
 import mongoose, { Document, Schema, Types } from "mongoose";
 import { CreditTransactionType, CreditTransactionSource } from "./enums.js";
 
-// ── Wallet ───────────────────────────────────────────────────
-// One wallet per User. Created automatically on user registration.
-
 export interface IWallet extends Document {
   userId: Types.ObjectId;
-  balance: number; // Current credit balance
-  totalPurchased: number; // Lifetime credits purchased
-  totalSpent: number; // Lifetime credits spent
+  balance: number;
+  totalPurchased: number;
+  totalSpent: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -30,13 +27,10 @@ const WalletSchema = new Schema<IWallet>(
 
 export const Wallet = mongoose.model<IWallet>("Wallet", WalletSchema);
 
-// ── CreditPack ───────────────────────────────────────────────
-// Admin-configured credit bundles available for purchase via Stripe.
-
 export interface ICreditPack extends Document {
   name: string;
-  credits: number; // Number of credits granted on purchase
-  stripePriceId: string; // Stripe Price ID for checkout
+  credits: number;
+  stripePriceId: string;
   active: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -57,18 +51,13 @@ export const CreditPack = mongoose.model<ICreditPack>(
   CreditPackSchema,
 );
 
-// ── CreditTransaction ────────────────────────────────────────
-// Immutable ledger entry for every credit movement on a Wallet.
-// Provides a full audit trail for purchases, spends, bonuses,
-// and refunds.
-
 export interface ICreditTransaction extends Document {
   walletId: Types.ObjectId;
   type: CreditTransactionType;
   source: CreditTransactionSource;
-  amount: number; // Positive = credits added; negative = credits deducted
-  balanceAfter: number; // Wallet balance immediately after this transaction
-  meta?: Record<string, unknown>; // e.g. { stripePaymentIntentId, creditPackId }
+  amount: number;
+  balanceAfter: number;
+  meta?: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 }

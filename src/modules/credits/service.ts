@@ -25,14 +25,17 @@ export async function listPacks() {
 
 export async function createCheckout(userId: string, body: CheckoutBodyType) {
   const pack = await CreditPack.findById(body.creditPackId).lean();
+
   if (!pack || !pack.active) {
     throw new AppError("NOT_FOUND", "Credit pack not found or inactive");
   }
 
   const wallet = await Wallet.findOne({ userId }).lean();
-  if (!wallet) throw new AppError("NOT_FOUND", "Wallet not found");
 
-  // Expire any previously pending checkouts for this pack — prevents duplicate pending rows
+  if (!wallet) {
+    throw new AppError("NOT_FOUND", "Wallet not found");
+  }
+
   await CreditTransaction.updateMany(
     {
       walletId: wallet._id,
@@ -43,7 +46,6 @@ export async function createCheckout(userId: string, body: CheckoutBodyType) {
     { $set: { "meta.status": "expired" } },
   );
 
-  // Create a pending transaction to track this checkout
   const pending = await CreditTransaction.create({
     walletId: wallet._id,
     type: CreditTransactionType.PURCHASE,
@@ -71,7 +73,6 @@ export async function createCheckout(userId: string, body: CheckoutBodyType) {
     },
   });
 
-  // Store Stripe session ID in transaction meta
   await CreditTransaction.updateOne(
     { _id: pending._id },
     { $set: { "meta.stripeSessionId": session.id } },
@@ -95,15 +96,17 @@ export async function handleWebhook(rawBody: Buffer, signature: string) {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
 
-    // Only fulfill sessions where payment actually succeeded
-    if (session.payment_status !== "paid") return { received: true };
+    if (session.payment_status !== "paid") {
+      return { received: true };
+    }
 
     const transactionRef = session.metadata?.transactionRef;
 
-    if (!transactionRef) return { received: true };
+    if (!transactionRef) {
+      return { received: true };
+    }
 
     await withMongoTransaction(async (dbSession) => {
-      // Claim this pending transaction exactly once.
       const claimed = await CreditTransaction.findOneAndUpdate(
         {
           _id: transactionRef,
@@ -119,13 +122,22 @@ export async function handleWebhook(rawBody: Buffer, signature: string) {
         },
         { new: true, session: dbSession },
       );
-      if (!claimed) return;
+
+      if (!claimed) {
+        return;
+      }
 
       const credits = claimed.amount;
-      if (credits <= 0) return;
+
+      if (credits <= 0) {
+        return;
+      }
 
       const wallet = await Wallet.findById(claimed.walletId).session(dbSession);
-      if (!wallet) return;
+
+      if (!wallet) {
+        return;
+      }
 
       const newBalance = wallet.balance + credits;
 
@@ -156,7 +168,10 @@ export async function handleWebhook(rawBody: Buffer, signature: string) {
 
 export async function getWallet(userId: string, query: WalletQueryParamsType) {
   const wallet = await Wallet.findOne({ userId }).lean();
-  if (!wallet) throw new AppError("NOT_FOUND", "Wallet not found");
+
+  if (!wallet) {
+    throw new AppError("NOT_FOUND", "Wallet not found");
+  }
 
   const skip = (query.page - 1) * query.limit;
   const [transactions, total] = await Promise.all([
@@ -181,9 +196,14 @@ export async function createPack(body: CreateCreditPackBodyType) {
 
 export async function togglePack(id: string) {
   const pack = await CreditPack.findById(id);
-  if (!pack) throw new AppError("NOT_FOUND", "Credit pack not found");
+
+  if (!pack) {
+    throw new AppError("NOT_FOUND", "Credit pack not found");
+  }
+
   pack.active = !pack.active;
   await pack.save();
+
   return pack;
 }
 
@@ -192,10 +212,16 @@ export async function grantCredits(
   adminId: string,
 ) {
   const user = await User.findById(body.userId).lean();
-  if (!user) throw new AppError("NOT_FOUND", "User not found");
+
+  if (!user) {
+    throw new AppError("NOT_FOUND", "User not found");
+  }
 
   const wallet = await Wallet.findOne({ userId: body.userId }).lean();
-  if (!wallet) throw new AppError("NOT_FOUND", "Wallet not found");
+
+  if (!wallet) {
+    throw new AppError("NOT_FOUND", "Wallet not found");
+  }
 
   await withMongoTransaction(async (session) => {
     const newBalance = wallet.balance + body.amount;

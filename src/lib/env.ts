@@ -38,6 +38,7 @@ if (!parsed.success) {
   const reason = parsed.error.issues
     .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
     .join("; ");
+
   throw new Error(`Invalid environment: ${reason}`);
 }
 

@@ -7,6 +7,7 @@ import {
   UpdateTournamentBody,
   AddPairBody,
   TournamentQueryParams,
+  type TournamentQueryParamsType,
 } from "./schema.js";
 
 const router = Router();
@@ -16,7 +17,10 @@ router.get(
   requireAuth,
   validateRequest({ query: TournamentQueryParams }),
   async (req: Request, res: Response) => {
-    const data = await service.list(req.query as never);
+    const data = await service.list(
+      req.query as unknown as TournamentQueryParamsType,
+    );
+
     res.json({ success: true, ...data });
   },
 );
@@ -27,12 +31,14 @@ router.post(
   validateRequest({ body: CreateTournamentBody }),
   async (req: Request, res: Response) => {
     const data = await service.create(req.body);
+
     res.status(201).json({ success: true, data });
   },
 );
 
 router.get("/:id", requireAuth, async (req: Request, res: Response) => {
   const data = await service.getById(req.params.id as string);
+
   res.json({ success: true, data });
 });
 
@@ -46,12 +52,14 @@ router.patch(
       req.body,
       req.auth!.userId,
     );
+
     res.json({ success: true, data });
   },
 );
 
 router.get("/:id/pairs", requireAuth, async (req: Request, res: Response) => {
   const data = await service.getPairs(req.params.id as string);
+
   res.json({ success: true, data });
 });
 
@@ -61,6 +69,7 @@ router.post(
   validateRequest({ body: AddPairBody }),
   async (req: Request, res: Response) => {
     const data = await service.addPair(req.params.id as string, req.body);
+
     res.status(201).json({ success: true, data });
   },
 );
@@ -82,16 +91,19 @@ router.post("/:id/lock", requireAdmin, async (req: Request, res: Response) => {
     req.params.id as string,
     req.auth!.userId,
   );
+
   res.json({ success: true, data });
 });
 
 router.get("/:id/bracket", requireAuth, async (req: Request, res: Response) => {
   const data = await service.getBracket(req.params.id as string);
+
   res.json({ success: true, data });
 });
 
 router.get("/:id/results", requireAuth, async (req: Request, res: Response) => {
   const data = await service.getResults(req.params.id as string);
+
   res.json({ success: true, data });
 });
 

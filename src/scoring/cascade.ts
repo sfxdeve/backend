@@ -14,26 +14,14 @@ import { LineupRole, LeagueStatus } from "../models/enums.js";
 import { computeMatchPoints } from "./engine.js";
 import { logger } from "../lib/logger.js";
 
-/**
- * Full recomputation cascade triggered whenever a match transitions to
- * COMPLETED or CORRECTED.
- *
- * Steps (in order):
- *  1. Resolve pair → athletes
- *  2. Compute and upsert AthleteMatchPoints for all 4 athletes
- *  3. Update Athlete.averageFantasyScore (running avg across all tournaments)
- *  4. Update LineupSlot.pointsScored for STARTER slots referencing affected athletes
- *  5. Recalculate FantasyTeam.totalPoints from all STARTER slot scores in all lineups
- *  6. Upsert GameweekStanding and re-rank within each affected league
- */
 export async function runCascade(matchId: string): Promise<void> {
   const match = await Match.findById(matchId).lean();
+
   if (!match) {
     logger.warn({ matchId }, "Cascade: match not found");
     return;
   }
 
-  // ── Step 1: Resolve athletes from pairs ──────────────────────
   const [pairA, pairB] = await Promise.all([
     TournamentPair.findById(match.pairAId).lean(),
     TournamentPair.findById(match.pairBId).lean(),
@@ -46,16 +34,17 @@ export async function runCascade(matchId: string): Promise<void> {
 
   const athleteIdsA = [String(pairA.athleteAId), String(pairA.athleteBId)];
   const athleteIdsB = [String(pairB.athleteAId), String(pairB.athleteBId)];
+
   const allAthleteIds = [...athleteIdsA, ...athleteIdsB];
 
   if (!match.winnerPairId) {
     logger.warn({ matchId }, "Cascade: no winner set, skipping");
     return;
   }
+
   const winnerIsA =
     String(match.winnerPairId) === String(match.pairAId) ? "A" : "B";
 
-  // ── Step 2: Compute and upsert AthleteMatchPoints ────────────
   const result = computeMatchPoints({
     round: match.round,
     set1A: match.set1A ?? 0,
@@ -101,7 +90,6 @@ export async function runCascade(matchId: string): Promise<void> {
 
   await AthleteMatchPoints.bulkWrite(upsertOps);
 
-  // ── Step 3: Update averageFantasyScore for each athlete ──────
   for (const athleteId of allAthleteIds) {
     const agg = await AthleteMatchPoints.aggregate([
       { $match: { athleteId: new mongoose.Types.ObjectId(athleteId) } },
@@ -114,8 +102,6 @@ export async function runCascade(matchId: string): Promise<void> {
     );
   }
 
-  // ── Step 4: Update LineupSlot.pointsScored for affected athletes ──
-  // Build a map: athleteId → totalPoints from this tournament
   const tournamentPointsMap = new Map<string, number>();
 
   for (const athleteId of allAthleteIds) {
@@ -131,7 +117,6 @@ export async function runCascade(matchId: string): Promise<void> {
     tournamentPointsMap.set(athleteId, agg[0]?.total ?? 0);
   }
 
-  // Find all locked lineups for this tournament
   const lockedLineups = await Lineup.find({
     tournamentId: match.tournamentId,
     isLocked: true,
@@ -140,13 +125,15 @@ export async function runCascade(matchId: string): Promise<void> {
     .lean();
 
   const lineupIds = lockedLineups.map((l) => l._id);
+
   const fantasyTeamIds = [
     ...new Set(lockedLineups.map((l) => String(l.fantasyTeamId))),
   ];
 
-  if (lineupIds.length === 0) return;
+  if (lineupIds.length === 0) {
+    return;
+  }
 
-  // Update each starter slot for affected athletes
   for (const [athleteId, pts] of tournamentPointsMap.entries()) {
     await LineupSlot.updateMany(
       {
@@ -158,9 +145,7 @@ export async function runCascade(matchId: string): Promise<void> {
     );
   }
 
-  // ── Step 5: Recalculate FantasyTeam.totalPoints ──────────────
   for (const ftId of fantasyTeamIds) {
-    // Sum all starter slot points across ALL locked lineups for this team (all tournaments = season total)
     const allLineupDocs = await Lineup.find({
       fantasyTeamId: ftId,
       isLocked: true,
@@ -185,10 +170,11 @@ export async function runCascade(matchId: string): Promise<void> {
     );
   }
 
-  // ── Step 6: Upsert GameweekStanding and re-rank ───────────────
-  // Get all leagues for this championship
   const tournament = await Tournament.findById(match.tournamentId).lean();
-  if (!tournament) return;
+
+  if (!tournament) {
+    return;
+  }
 
   const leagues = await League.find({
     championshipId: tournament.championshipId,
@@ -200,7 +186,6 @@ export async function runCascade(matchId: string): Promise<void> {
   for (const league of leagues) {
     const leagueId = String(league._id);
 
-    // Get all fantasy teams in this league that have a locked lineup for this tournament
     const memberships = await LeagueMembership.find({ leagueId }).lean();
     const memberUserIds = memberships.map((m) => String(m.userId));
 
@@ -210,24 +195,26 @@ export async function runCascade(matchId: string): Promise<void> {
     }).lean();
 
     for (const team of teams) {
-      // Check enrollment date — no retroactive points (§11.1)
       const membership = memberships.find(
         (m) => String(m.userId) === String(team.userId),
       );
-      if (!membership) continue;
-      // §11.1: skip teams that enrolled after this tournament ended
-      if (tournament.endDate < membership.enrolledAt) continue;
 
-      // Find team's lineup for this tournament
-      const lineup = lockedLineups.find(
-        (l) => String(l.fantasyTeamId) === String(team._id),
-      );
-      if (!lineup) {
-        // Team has no lineup for this tournament — skip (0 points)
+      if (!membership) {
         continue;
       }
 
-      // Sum starter slot points for this specific (team, tournament)
+      if (tournament.endDate < membership.enrolledAt) {
+        continue;
+      }
+
+      const lineup = lockedLineups.find(
+        (l) => String(l.fantasyTeamId) === String(team._id),
+      );
+
+      if (!lineup) {
+        continue;
+      }
+
       const slots = await LineupSlot.find({
         lineupId: lineup._id,
         $or: [{ role: LineupRole.STARTER }, { substitutedIn: true }],
@@ -238,7 +225,6 @@ export async function runCascade(matchId: string): Promise<void> {
         0,
       );
 
-      // Get cumulative points for prior tournaments
       const priorTotal = await GameweekStanding.aggregate([
         {
           $match: {
@@ -251,6 +237,7 @@ export async function runCascade(matchId: string): Promise<void> {
         },
         { $group: { _id: null, total: { $sum: "$gameweekPoints" } } },
       ]);
+
       const cumulative = (priorTotal[0]?.total ?? 0) + gameweekPts;
 
       await GameweekStanding.findOneAndUpdate(
@@ -269,7 +256,6 @@ export async function runCascade(matchId: string): Promise<void> {
       );
     }
 
-    // Re-rank all standings for this league + tournament
     const standings = await GameweekStanding.find({
       leagueId: league._id,
       tournamentId: match.tournamentId,

@@ -14,7 +14,9 @@ function toFieldMap(error: ZodError): Record<string, string[]> {
   for (const issue of error.issues) {
     const key = issue.path.length > 0 ? issue.path.join(".") : "_";
 
-    if (!fields[key]) fields[key] = [];
+    if (!fields[key]) {
+      fields[key] = [];
+    }
 
     fields[key].push(issue.message);
   }

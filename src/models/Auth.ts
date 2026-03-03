@@ -1,8 +1,6 @@
 import mongoose, { Document, Schema, Types } from "mongoose";
 import { Role, OtpPurpose } from "./enums.js";
 
-// ── User ─────────────────────────────────────────────────────
-
 export interface IUser extends Document {
   email: string;
   passwordHash: string;
@@ -40,8 +38,6 @@ const UserSchema = new Schema<IUser>(
 
 export const User = mongoose.model<IUser>("User", UserSchema);
 
-// ── Session ──────────────────────────────────────────────────
-
 export interface ISession extends Document {
   userId: Types.ObjectId;
   userAgent: string;
@@ -64,15 +60,12 @@ const SessionSchema = new Schema<ISession>(
   { timestamps: true },
 );
 
-// TTL: documents expire 30 days after createdAt
 SessionSchema.index(
   { createdAt: 1 },
   { expireAfterSeconds: 60 * 60 * 24 * 30 },
 );
 
 export const Session = mongoose.model<ISession>("Session", SessionSchema);
-
-// ── OTP ──────────────────────────────────────────────────────
 
 export interface IOtp extends Document {
   userId: Types.ObjectId;

@@ -10,6 +10,7 @@ export async function withMongoTransaction<T>(
     await session.withTransaction(async () => {
       result = await work(session);
     });
+
     return result;
   } finally {
     await session.endSession();

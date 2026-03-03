@@ -5,6 +5,7 @@ export async function createSession(
   userAgent?: string,
 ): Promise<string> {
   const session = await Session.create({ userId, userAgent });
+
   return String(session._id);
 }
 
@@ -18,5 +19,6 @@ export async function revokeAllUserSessions(userId: string): Promise<void> {
 
 export async function validateSession(sessionId: string): Promise<boolean> {
   const session = await Session.findById(sessionId).lean();
+
   return session != null && !session.isRevoked;
 }

@@ -30,5 +30,7 @@ export const MatchQueryParams = z.object({
 });
 
 export type CreateMatchBodyType = z.infer<typeof CreateMatchBody>;
+
 export type UpdateMatchBodyType = z.infer<typeof UpdateMatchBody>;
+
 export type MatchQueryParamsType = z.infer<typeof MatchQueryParams>;

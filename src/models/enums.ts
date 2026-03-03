@@ -13,8 +13,6 @@ export enum Gender {
   F = "F",
 }
 
-// ── Real World ───────────────────────────────────────────────
-
 export enum TournamentStatus {
   UPCOMING = "UPCOMING",
   REGISTRATION_OPEN = "REGISTRATION_OPEN",
@@ -49,8 +47,6 @@ export enum MatchStatus {
   CORRECTED = "CORRECTED",
 }
 
-// ── Fantasy World ────────────────────────────────────────────
-
 export enum LeagueType {
   PUBLIC = "PUBLIC",
   PRIVATE = "PRIVATE",
@@ -71,8 +67,6 @@ export enum LineupRole {
   STARTER = "STARTER",
   BENCH = "BENCH",
 }
-
-// ── Credits & Payments ───────────────────────────────────────
 
 export enum CreditTransactionType {
   PURCHASE = "PURCHASE",

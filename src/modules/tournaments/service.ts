@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import {
   Championship,
   Tournament,
@@ -26,8 +25,15 @@ import type {
 
 export async function list(query: TournamentQueryParamsType) {
   const filter: Record<string, unknown> = {};
-  if (query.championshipId) filter.championshipId = query.championshipId;
-  if (query.status) filter.status = query.status;
+
+  if (query.championshipId) {
+    filter.championshipId = query.championshipId;
+  }
+
+  if (query.status) {
+    filter.status = query.status;
+  }
+
   if (query.year) {
     filter.startDate = {
       $gte: new Date(`${query.year}-01-01`),
@@ -36,6 +42,7 @@ export async function list(query: TournamentQueryParamsType) {
   }
 
   const skip = (query.page - 1) * query.limit;
+
   const [items, total] = await Promise.all([
     Tournament.find(filter)
       .populate("championshipId", "name gender seasonYear")
@@ -56,7 +63,11 @@ export async function getById(id: string) {
   const doc = await Tournament.findById(id)
     .populate("championshipId", "name gender seasonYear")
     .lean();
-  if (!doc) throw new AppError("NOT_FOUND", "Tournament not found");
+
+  if (!doc) {
+    throw new AppError("NOT_FOUND", "Tournament not found");
+  }
+
   return doc;
 }
 
@@ -70,7 +81,10 @@ export async function update(
   adminId: string,
 ) {
   const before = await Tournament.findById(id).lean();
-  if (!before) throw new AppError("NOT_FOUND", "Tournament not found");
+
+  if (!before) {
+    throw new AppError("NOT_FOUND", "Tournament not found");
+  }
 
   const doc = await Tournament.findByIdAndUpdate(id, body, {
     new: true,
@@ -91,7 +105,10 @@ export async function update(
 
 export async function getPairs(tournamentId: string) {
   const doc = await Tournament.findById(tournamentId).lean();
-  if (!doc) throw new AppError("NOT_FOUND", "Tournament not found");
+
+  if (!doc) {
+    throw new AppError("NOT_FOUND", "Tournament not found");
+  }
 
   return TournamentPair.find({ tournamentId })
     .populate(
@@ -107,26 +124,31 @@ export async function getPairs(tournamentId: string) {
 
 export async function addPair(tournamentId: string, body: AddPairBodyType) {
   const doc = await Tournament.findById(tournamentId).lean();
-  if (!doc) throw new AppError("NOT_FOUND", "Tournament not found");
+
+  if (!doc) {
+    throw new AppError("NOT_FOUND", "Tournament not found");
+  }
 
   if (body.athleteAId === body.athleteBId) {
     throw new AppError("BAD_REQUEST", "Athletes in a pair must be different");
   }
 
-  // Ensure athletes belong to same championship gender
   const [athleteA, athleteB] = await Promise.all([
     Athlete.findById(body.athleteAId).lean(),
     Athlete.findById(body.athleteBId).lean(),
   ]);
+
   if (!athleteA || !athleteB) {
     throw new AppError("NOT_FOUND", "One or both athletes not found");
   }
+
   if (String(athleteA.championshipId) !== String(doc.championshipId)) {
     throw new AppError(
       "BAD_REQUEST",
       "Athlete A does not belong to this tournament's championship",
     );
   }
+
   if (String(athleteB.championshipId) !== String(doc.championshipId)) {
     throw new AppError(
       "BAD_REQUEST",
@@ -134,15 +156,19 @@ export async function addPair(tournamentId: string, body: AddPairBodyType) {
     );
   }
 
-  // §13.5: gender isolation — both athletes must match championship gender
   const championship = await Championship.findById(doc.championshipId).lean();
-  if (!championship) throw new AppError("NOT_FOUND", "Championship not found");
+
+  if (!championship) {
+    throw new AppError("NOT_FOUND", "Championship not found");
+  }
+
   if (athleteA.gender !== championship.gender) {
     throw new AppError(
       "BAD_REQUEST",
       "Athlete A gender does not match championship gender",
     );
   }
+
   if (athleteB.gender !== championship.gender) {
     throw new AppError(
       "BAD_REQUEST",
@@ -158,6 +184,7 @@ export async function removePair(tournamentId: string, pairId: string) {
     _id: pairId,
     tournamentId,
   });
+
   if (result.deletedCount === 0) {
     throw new AppError("NOT_FOUND", "Pair not found in this tournament");
   }
@@ -165,7 +192,10 @@ export async function removePair(tournamentId: string, pairId: string) {
 
 export async function getBracket(tournamentId: string) {
   const tournament = await Tournament.findById(tournamentId).lean();
-  if (!tournament) throw new AppError("NOT_FOUND", "Tournament not found");
+
+  if (!tournament) {
+    throw new AppError("NOT_FOUND", "Tournament not found");
+  }
 
   const matches = await Match.find({ tournamentId })
     .populate("pairAId")
@@ -173,10 +203,13 @@ export async function getBracket(tournamentId: string) {
     .populate("winnerPairId")
     .lean();
 
-  // Group by round
   const grouped: Record<string, typeof matches> = {};
+
   for (const match of matches) {
-    if (!grouped[match.round]) grouped[match.round] = [];
+    if (!grouped[match.round]) {
+      grouped[match.round] = [];
+    }
+
     grouped[match.round].push(match);
   }
 
@@ -185,7 +218,10 @@ export async function getBracket(tournamentId: string) {
 
 export async function getResults(tournamentId: string) {
   const tournament = await Tournament.findById(tournamentId).lean();
-  if (!tournament) throw new AppError("NOT_FOUND", "Tournament not found");
+
+  if (!tournament) {
+    throw new AppError("NOT_FOUND", "Tournament not found");
+  }
 
   return Match.find({ tournamentId })
     .populate({
@@ -206,14 +242,12 @@ export async function getResults(tournamentId: string) {
     .lean();
 }
 
-/**
- * Trigger lineup lock for a tournament.
- * Sets tournament status to LOCKED, then runs auto-substitution
- * for all fantasy teams in leagues scoped to this tournament's championship.
- */
 export async function lockLineups(tournamentId: string, adminId: string) {
   const tournament = await Tournament.findById(tournamentId);
-  if (!tournament) throw new AppError("NOT_FOUND", "Tournament not found");
+
+  if (!tournament) {
+    throw new AppError("NOT_FOUND", "Tournament not found");
+  }
 
   if (
     tournament.status === TournamentStatus.LOCKED ||
@@ -227,6 +261,7 @@ export async function lockLineups(tournamentId: string, adminId: string) {
   }
 
   const now = new Date();
+
   await Tournament.updateOne(
     { _id: tournamentId },
     { status: TournamentStatus.LOCKED, lineupLockAt: now },
@@ -249,21 +284,19 @@ export async function lockLineups(tournamentId: string, adminId: string) {
   return { message: "Tournament locked and lineup substitutions applied" };
 }
 
-/**
- * For each fantasy team in all leagues scoped to this championship,
- * create/update their lineup for this tournament and apply auto-substitution.
- */
 async function runLineupLockForTournament(tournamentId: string) {
   const tournament = await Tournament.findById(tournamentId).lean();
-  if (!tournament) return;
 
-  // Get tournament's entry list (all registered pair athlete IDs)
+  if (!tournament) {
+    return;
+  }
+
   const pairs = await TournamentPair.find({ tournamentId }).lean();
+
   const registeredAthleteIds = new Set(
     pairs.flatMap((p) => [String(p.athleteAId), String(p.athleteBId)]),
   );
 
-  // Find all active leagues for this championship
   const leagues = await League.find({
     championshipId: tournament.championshipId,
     status: { $ne: "COMPLETED" },
@@ -279,16 +312,17 @@ async function runLineupLockForTournament(tournamentId: string) {
         leagueId: league._id,
         userId: membership.userId,
       }).lean();
-      if (!team) continue;
 
-      // Find or create lineup for this tournament
+      if (!team) {
+        continue;
+      }
+
       let lineup = await Lineup.findOne({
         fantasyTeamId: team._id,
         tournamentId,
       });
 
       if (!lineup) {
-        // No lineup submitted — reuse last valid lineup
         const lastLineup = await Lineup.findOne({
           fantasyTeamId: team._id,
         })
@@ -296,7 +330,6 @@ async function runLineupLockForTournament(tournamentId: string) {
           .lean();
 
         if (lastLineup) {
-          // Clone slots from previous lineup
           const lastSlots = await LineupSlot.find({
             lineupId: lastLineup._id,
           }).lean();
@@ -320,7 +353,6 @@ async function runLineupLockForTournament(tournamentId: string) {
             );
           }
         } else {
-          // No previous lineup — create empty locked lineup (0 pts)
           lineup = await Lineup.create({
             fantasyTeamId: team._id,
             tournamentId,
@@ -329,10 +361,8 @@ async function runLineupLockForTournament(tournamentId: string) {
         }
       }
 
-      // Apply auto-substitution
       await applyAutoSubstitution(String(lineup._id), registeredAthleteIds);
 
-      // Lock the lineup
       await Lineup.updateOne(
         { _id: lineup._id },
         { isLocked: true, lockedAt: new Date() },
@@ -341,9 +371,6 @@ async function runLineupLockForTournament(tournamentId: string) {
   }
 }
 
-/**
- * For each STARTER not in the entry list, promote the first eligible BENCH athlete.
- */
 async function applyAutoSubstitution(
   lineupId: string,
   registeredAthleteIds: Set<string>,
@@ -353,6 +380,7 @@ async function applyAutoSubstitution(
     .lean();
 
   const starters = slots.filter((s) => s.role === LineupRole.STARTER);
+
   const bench = slots
     .filter((s) => s.role === LineupRole.BENCH)
     .sort((a, b) => (a.benchOrder ?? 99) - (b.benchOrder ?? 99));
@@ -360,16 +388,16 @@ async function applyAutoSubstitution(
   let benchIdx = 0;
 
   for (const starter of starters) {
-    if (registeredAthleteIds.has(String(starter.athleteId))) continue;
+    if (registeredAthleteIds.has(String(starter.athleteId))) {
+      continue;
+    }
 
-    // This starter is not in the tournament entry list — substitute
     let promoted = false;
     while (benchIdx < bench.length) {
       const candidate = bench[benchIdx];
       benchIdx++;
 
       if (registeredAthleteIds.has(String(candidate.athleteId))) {
-        // Promote candidate to STARTER
         await LineupSlot.updateOne(
           { _id: candidate._id },
           { role: LineupRole.STARTER, substitutedIn: true },
@@ -380,8 +408,6 @@ async function applyAutoSubstitution(
     }
 
     if (!promoted) {
-      // No eligible bench athlete — original starter stays but scores 0
-      // (pointsScored defaults to 0, no action needed)
     }
   }
 }

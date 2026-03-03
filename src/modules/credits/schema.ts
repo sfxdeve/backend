@@ -23,6 +23,9 @@ export const WalletQueryParams = z.object({
 });
 
 export type CheckoutBodyType = z.infer<typeof CheckoutBody>;
+
 export type CreateCreditPackBodyType = z.infer<typeof CreateCreditPackBody>;
+
 export type GrantCreditsBodyType = z.infer<typeof GrantCreditsBody>;
+
 export type WalletQueryParamsType = z.infer<typeof WalletQueryParams>;

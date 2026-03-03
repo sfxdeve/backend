@@ -14,6 +14,7 @@ router.get(
     const data = await service.getAuditLog(
       req.query as unknown as AuditLogQueryParamsType,
     );
+
     res.json({ success: true, ...data });
   },
 );

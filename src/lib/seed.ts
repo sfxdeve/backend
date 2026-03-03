@@ -52,7 +52,10 @@ export async function seedAdmin(): Promise<void> {
 
 export async function seedCreditPacks(): Promise<void> {
   const count = await CreditPack.countDocuments().lean();
-  if (count > 0) return;
+
+  if (count > 0) {
+    return;
+  }
 
   await CreditPack.insertMany([
     {

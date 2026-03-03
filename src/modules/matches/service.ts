@@ -13,9 +13,18 @@ import type {
 
 export async function list(query: MatchQueryParamsType) {
   const filter: Record<string, unknown> = {};
-  if (query.tournamentId) filter.tournamentId = query.tournamentId;
-  if (query.round) filter.round = query.round;
-  if (query.status) filter.status = query.status;
+
+  if (query.tournamentId) {
+    filter.tournamentId = query.tournamentId;
+  }
+
+  if (query.round) {
+    filter.round = query.round;
+  }
+
+  if (query.status) {
+    filter.status = query.status;
+  }
 
   return Match.find(filter)
     .populate({
@@ -54,9 +63,10 @@ export async function getById(id: string) {
     })
     .lean();
 
-  if (!match) throw new AppError("NOT_FOUND", "Match not found");
+  if (!match) {
+    throw new AppError("NOT_FOUND", "Match not found");
+  }
 
-  // Attach athlete match points if available
   const points = await AthleteMatchPoints.find({ matchId: id })
     .populate("athleteId", "firstName lastName")
     .lean();
@@ -74,7 +84,10 @@ export async function update(
   adminId: string,
 ) {
   const before = await Match.findById(id).lean();
-  if (!before) throw new AppError("NOT_FOUND", "Match not found");
+
+  if (!before) {
+    throw new AppError("NOT_FOUND", "Match not found");
+  }
 
   const { reason, ...updateFields } = body;
 
@@ -83,7 +96,9 @@ export async function update(
     runValidators: true,
   }).lean();
 
-  if (!doc) throw new AppError("NOT_FOUND", "Match not found");
+  if (!doc) {
+    throw new AppError("NOT_FOUND", "Match not found");
+  }
 
   await AdminAuditLog.create({
     adminId,
@@ -95,13 +110,10 @@ export async function update(
     reason,
   });
 
-  // Trigger cascade when match is completed or corrected
   if (
     doc.status === MatchStatus.COMPLETED ||
     doc.status === MatchStatus.CORRECTED
   ) {
-    // Run cascade asynchronously to avoid blocking the response,
-    // but still within the same process (no queue).
     runCascade(id).catch((err) => {
       logger.error({ err, matchId: id }, "Cascade error");
     });

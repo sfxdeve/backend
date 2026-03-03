@@ -24,6 +24,7 @@ router.get(
       req.auth!.userId,
       isAdmin,
     );
+
     res.json({ success: true, ...data });
   },
 );
@@ -34,6 +35,7 @@ router.post(
   validateRequest({ body: CreateLeagueBody }),
   async (req: Request, res: Response) => {
     const data = await service.create(req.body, req.auth!.userId);
+
     res.status(201).json({ success: true, data });
   },
 );
@@ -45,6 +47,7 @@ router.get("/:id", requireAuth, async (req: Request, res: Response) => {
     req.auth!.userId,
     isAdmin,
   );
+
   res.json({ success: true, data });
 });
 
@@ -58,6 +61,7 @@ router.post(
       req.auth!.userId,
       req.body,
     );
+
     res.json({ success: true, data });
   },
 );
@@ -74,6 +78,7 @@ router.get(
       isAdmin,
       req.query as unknown as StandingsQueryParamsType,
     );
+
     res.json({ success: true, data });
   },
 );

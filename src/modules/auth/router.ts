@@ -24,11 +24,12 @@ import {
 const router = Router();
 
 const REFRESH_COOKIE = "refreshToken";
+
 const COOKIE_OPTS = {
   httpOnly: true,
   secure: env.NODE_ENV === "production",
   sameSite: "strict" as const,
-  maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+  maxAge: 30 * 24 * 60 * 60 * 1000,
 };
 
 router.post(
@@ -37,6 +38,7 @@ router.post(
   validateRequest({ body: RegisterBody }),
   async (req: Request, res: Response) => {
     const result = await service.register(req.body);
+
     res.status(201).json({ success: true, data: result });
   },
 );
@@ -47,6 +49,7 @@ router.post(
   validateRequest({ body: VerifyEmailBody }),
   async (req: Request, res: Response) => {
     const result = await service.verifyEmail(req.body);
+
     res.json({ success: true, data: result });
   },
 );
@@ -58,6 +61,7 @@ router.post(
   async (req: Request, res: Response) => {
     const userAgent = req.headers["user-agent"];
     const result = await service.login(req.body, userAgent);
+
     res.cookie(REFRESH_COOKIE, result.refreshToken, COOKIE_OPTS).json({
       success: true,
       data: { accessToken: result.accessToken, user: result.user },
@@ -69,12 +73,16 @@ router.post(
   "/refresh",
   async (req: Request, res: Response, next: NextFunction) => {
     const token = req.cookies?.[REFRESH_COOKIE] as string | undefined;
+
     if (!token) {
       next(new AppError("UNAUTHORIZED", "No refresh token"));
       return;
     }
+
     const userAgent = req.headers["user-agent"];
+
     const result = await service.refreshTokens(token, userAgent);
+
     res
       .cookie(REFRESH_COOKIE, result.refreshToken, COOKIE_OPTS)
       .json({ success: true, data: { accessToken: result.accessToken } });
@@ -83,6 +91,7 @@ router.post(
 
 router.post("/logout", requireAuth, async (req: Request, res: Response) => {
   await service.logout(req.auth!.sessionId);
+
   res
     .clearCookie(REFRESH_COOKIE)
     .json({ success: true, data: { message: "Logged out" } });
@@ -94,6 +103,7 @@ router.post(
   validateRequest({ body: ForgotPasswordBody }),
   async (req: Request, res: Response) => {
     const result = await service.forgotPassword(req.body);
+
     res.json({ success: true, data: result });
   },
 );
@@ -104,6 +114,7 @@ router.post(
   validateRequest({ body: ResetPasswordBody }),
   async (req: Request, res: Response) => {
     const result = await service.resetPassword(req.body);
+
     res.json({ success: true, data: result });
   },
 );

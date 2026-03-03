@@ -1,19 +1,11 @@
-/**
- * Generates Postman collection and environment from a single source of truth.
- * Collection depends entirely on the environment for all variables.
- * Run: node scripts/generate-postman-collection.js
- *
- * All URLs use string form {{baseUrl}}{{apiPrefix}}/... to avoid double-slash issues.
- */
-
 import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
 const postmanDir = join(__dirname, "..", "postman");
 
-// Single source of truth for all variables (collection has none; env provides all)
 const ENV_VARS = [
   { key: "baseUrl", value: "http://localhost:5555", type: "default" },
   { key: "apiPrefix", value: "/api/v1", type: "default" },
@@ -633,10 +625,13 @@ writeFileSync(
   JSON.stringify(collection, null, 2),
   "utf8",
 );
+
 writeFileSync(
   join(postmanDir, "Fantabeach Local.postman_environment.json"),
   JSON.stringify(environment, null, 2),
   "utf8",
 );
+
 console.log("Wrote postman/Fantabeach API.postman_collection.json");
+
 console.log("Wrote postman/Fantabeach Local.postman_environment.json");

@@ -7,8 +7,6 @@ import {
   MatchStatus,
 } from "./enums.js";
 
-// ── Championship ──────────────────────────────────────────────
-
 export interface IChampionship extends Document {
   name: string;
   gender: Gender;
@@ -32,8 +30,6 @@ export const Championship = mongoose.model<IChampionship>(
   "Championship",
   ChampionshipSchema,
 );
-
-// ── Athlete ───────────────────────────────────────────────────
 
 export interface IAthlete extends Document {
   firstName: string;
@@ -73,8 +69,6 @@ AthleteSchema.index({ championshipId: 1, gender: 1 });
 
 export const Athlete = mongoose.model<IAthlete>("Athlete", AthleteSchema);
 
-// ── Tournament ────────────────────────────────────────────────
-
 export interface ITournament extends Document {
   championshipId: Types.ObjectId;
   location: string;
@@ -113,10 +107,6 @@ export const Tournament = mongoose.model<ITournament>(
   "Tournament",
   TournamentSchema,
 );
-
-// ── TournamentPair ────────────────────────────────────────────
-// A pair is always tournament-scoped. The same athlete may compete
-// with different partners across tournaments.
 
 export interface ITournamentPair extends Document {
   tournamentId: Types.ObjectId;
@@ -165,8 +155,6 @@ export const TournamentPair = mongoose.model<ITournamentPair>(
   "TournamentPair",
   TournamentPairSchema,
 );
-
-// ── Match ─────────────────────────────────────────────────────
 
 export interface IMatch extends Document {
   tournamentId: Types.ObjectId;

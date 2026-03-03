@@ -8,12 +8,14 @@ import {
   CreateCreditPackBody,
   GrantCreditsBody,
   WalletQueryParams,
+  type WalletQueryParamsType,
 } from "./schema.js";
 
 const router = Router();
 
 router.get("/packs", requireAuth, async (_req: Request, res: Response) => {
   const data = await service.listPacks();
+
   res.json({ success: true, data });
 });
 
@@ -23,11 +25,11 @@ router.post(
   validateRequest({ body: CheckoutBody }),
   async (req: Request, res: Response) => {
     const data = await service.createCheckout(req.auth!.userId, req.body);
+
     res.json({ success: true, data });
   },
 );
 
-// Stripe webhook — raw body required; no JWT auth; rate-limited separately
 router.post(
   "/webhook",
   stripeWebhookRateLimiter,
@@ -40,7 +42,9 @@ router.post(
       });
       return;
     }
+
     const data = await service.handleWebhook(req.body as Buffer, sig);
+
     res.json({ success: true, data });
   },
 );
@@ -50,18 +54,22 @@ router.get(
   requireAuth,
   validateRequest({ query: WalletQueryParams }),
   async (req: Request, res: Response) => {
-    const data = await service.getWallet(req.auth!.userId, req.query as never);
+    const data = await service.getWallet(
+      req.auth!.userId,
+      req.query as unknown as WalletQueryParamsType,
+    );
+
     res.json({ success: true, ...data });
   },
 );
 
-// Admin endpoints
 router.post(
   "/admin/packs",
   requireAdmin,
   validateRequest({ body: CreateCreditPackBody }),
   async (req: Request, res: Response) => {
     const data = await service.createPack(req.body);
+
     res.status(201).json({ success: true, data });
   },
 );
@@ -71,6 +79,7 @@ router.patch(
   requireAdmin,
   async (req: Request, res: Response) => {
     const data = await service.togglePack(req.params.id as string);
+
     res.json({ success: true, data });
   },
 );
@@ -81,6 +90,7 @@ router.post(
   validateRequest({ body: GrantCreditsBody }),
   async (req: Request, res: Response) => {
     const data = await service.grantCredits(req.body, req.auth!.userId);
+
     res.json({ success: true, data });
   },
 );

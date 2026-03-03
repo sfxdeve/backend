@@ -1,9 +1,5 @@
 import { MatchRound } from "../models/enums.js";
 
-// ── Scoring Engine ────────────────────────────────────────────
-// Pure computation module — zero side effects, no DB access.
-// All functions are deterministic: same input always produces same output.
-
 export interface MatchScoreInput {
   round: MatchRound;
   set1A: number;
@@ -12,7 +8,7 @@ export interface MatchScoreInput {
   set2B: number;
   set3A?: number;
   set3B?: number;
-  winnerPairId: string; // "A" | "B"
+  winnerPairId: string;
   isRetirement: boolean;
 }
 
@@ -27,22 +23,10 @@ export interface MatchPointsResult {
   pairB: PairScore;
 }
 
-/**
- * Compute base points for a pair from sets 1 and 2.
- * Set 3 (tiebreak) never contributes base points.
- */
 function computeBase(set1: number, set2: number): number {
   return Math.floor(set1 / 3) + Math.floor(set2 / 3);
 }
 
-/**
- * Compute the win bonus for a given round.
- * All round wins earn +3. Certain rounds add an incremental bonus:
- *   QF  → +3 +1 = +4
- *   SF  → +3 +2 = +5
- *   FINAL (1st place) → +3 +5 = +8
- *   THIRD_PLACE (bronze) → +3 +2 = +5
- */
 function winBonus(round: MatchRound): number {
   const base = 3;
   switch (round) {
@@ -59,12 +43,6 @@ function winBonus(round: MatchRound): number {
   }
 }
 
-/**
- * Compute fantasy points for both pairs in a completed match.
- *
- * @param input  Match score data with winner designation
- * @returns      Points for pair A and pair B
- */
 export function computeMatchPoints(input: MatchScoreInput): MatchPointsResult {
   const baseA = computeBase(input.set1A, input.set2A);
   const baseB = computeBase(input.set1B, input.set2B);

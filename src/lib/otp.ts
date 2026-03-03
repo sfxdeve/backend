@@ -31,10 +31,16 @@ export async function verifyOtp(
     purpose,
     expiresAt: { $gt: new Date() },
   });
-  if (!record) return false;
+
+  if (!record) {
+    return false;
+  }
 
   const valid = await compareSecret(code, record.hash);
-  if (valid) await record.deleteOne();
+
+  if (valid) {
+    await record.deleteOne();
+  }
 
   return valid;
 }

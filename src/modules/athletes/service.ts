@@ -11,8 +11,14 @@ import type {
 export async function list(query: AthleteQueryParamsType) {
   const filter: Record<string, unknown> = {};
 
-  if (query.championshipId) filter.championshipId = query.championshipId;
-  if (query.gender) filter.gender = query.gender;
+  if (query.championshipId) {
+    filter.championshipId = query.championshipId;
+  }
+
+  if (query.gender) {
+    filter.gender = query.gender;
+  }
+
   if (query.search) {
     const escaped = query.search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const regex = new RegExp(escaped, "i");
@@ -20,6 +26,7 @@ export async function list(query: AthleteQueryParamsType) {
   }
 
   const skip = (query.page - 1) * query.limit;
+
   const [items, total] = await Promise.all([
     Athlete.find(filter)
       .populate("championshipId", "name gender seasonYear")
@@ -40,7 +47,11 @@ export async function getById(id: string) {
   const doc = await Athlete.findById(id)
     .populate("championshipId", "name gender seasonYear")
     .lean();
-  if (!doc) throw new AppError("NOT_FOUND", "Athlete not found");
+
+  if (!doc) {
+    throw new AppError("NOT_FOUND", "Athlete not found");
+  }
+
   return doc;
 }
 
@@ -54,7 +65,10 @@ export async function update(
   adminId: string,
 ) {
   const before = await Athlete.findById(id).lean();
-  if (!before) throw new AppError("NOT_FOUND", "Athlete not found");
+
+  if (!before) {
+    throw new AppError("NOT_FOUND", "Athlete not found");
+  }
 
   const doc = await Athlete.findByIdAndUpdate(id, body, {
     new: true,

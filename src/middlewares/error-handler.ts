@@ -22,6 +22,7 @@ export function errorHandler(
   _next: NextFunction,
 ): void {
   const appError = asAppError(error);
+
   const envelope = toErrorEnvelope({
     code: appError.code,
     message: appError.message,

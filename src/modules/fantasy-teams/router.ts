@@ -8,11 +8,11 @@ import {
   SubmitLineupBody,
 } from "./schema.js";
 
-// This router is mounted at /leagues — routes include the :id param.
 const router = Router({ mergeParams: true });
 
 router.get("/team", requireAuth, async (req: Request, res: Response) => {
   const data = await service.getTeam(req.params.id as string, req.auth!.userId);
+
   res.json({ success: true, data });
 });
 
@@ -26,6 +26,7 @@ router.post(
       req.auth!.userId,
       req.body,
     );
+
     res.status(201).json({ success: true, data });
   },
 );
@@ -40,6 +41,7 @@ router.patch(
       req.auth!.userId,
       req.body,
     );
+
     res.json({ success: true, data });
   },
 );
@@ -53,6 +55,7 @@ router.get(
       req.auth!.userId,
       req.params.tournamentId as string,
     );
+
     res.json({ success: true, data });
   },
 );
@@ -68,6 +71,7 @@ router.put(
       req.params.tournamentId as string,
       req.body,
     );
+
     res.json({ success: true, data });
   },
 );

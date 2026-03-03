@@ -23,5 +23,7 @@ export const AthleteQueryParams = z.object({
 });
 
 export type CreateAthleteBodyType = z.infer<typeof CreateAthleteBody>;
+
 export type UpdateAthleteBodyType = z.infer<typeof UpdateAthleteBody>;
+
 export type AthleteQueryParamsType = z.infer<typeof AthleteQueryParams>;

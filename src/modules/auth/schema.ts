@@ -27,7 +27,11 @@ export const ResetPasswordBody = z.object({
 });
 
 export type RegisterBodyType = z.infer<typeof RegisterBody>;
+
 export type VerifyEmailBodyType = z.infer<typeof VerifyEmailBody>;
+
 export type LoginBodyType = z.infer<typeof LoginBody>;
+
 export type ForgotPasswordBodyType = z.infer<typeof ForgotPasswordBody>;
+
 export type ResetPasswordBodyType = z.infer<typeof ResetPasswordBody>;

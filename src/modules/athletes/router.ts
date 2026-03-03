@@ -19,6 +19,7 @@ router.get(
     const data = await service.list(
       req.query as unknown as AthleteQueryParamsType,
     );
+
     res.json({ success: true, ...data });
   },
 );
@@ -29,12 +30,14 @@ router.post(
   validateRequest({ body: CreateAthleteBody }),
   async (req: Request, res: Response) => {
     const data = await service.create(req.body);
+
     res.status(201).json({ success: true, data });
   },
 );
 
 router.get("/:id", requireAuth, async (req: Request, res: Response) => {
   const data = await service.getById(req.params.id as string);
+
   res.json({ success: true, data });
 });
 
@@ -48,6 +51,7 @@ router.patch(
       req.body,
       req.auth!.userId,
     );
+
     res.json({ success: true, data });
   },
 );
