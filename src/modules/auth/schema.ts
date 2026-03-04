@@ -1,35 +1,44 @@
 import { z } from "zod";
 
-const Email = z.string().trim().toLowerCase().email();
-const OtpCode = z
-  .string()
-  .trim()
-  .regex(/^\d{6}$/, "Code must be 6 digits");
-
 export const RegisterBody = z.object({
-  name: z.string().trim().min(2).max(100),
-  email: Email,
-  password: z.string().min(8).max(128),
+  name: z
+    .string()
+    .min(3, "Name must be at least 3 chars")
+    .max(128, "Name must be at most 128 chars"),
+  email: z.email("Email must be a valid email"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 chars")
+    .max(32, "Password must be at most 32 chars"),
 });
 
 export const VerifyEmailBody = z.object({
-  email: Email,
-  code: OtpCode,
+  email: z.email("Email must be a valid email"),
+  code: z
+    .string()
+    .min(1, "Code is required")
+    .regex(/^\d{6}$/, "Code must be 6 digits"),
 });
 
 export const LoginBody = z.object({
-  email: Email,
-  password: z.string().min(1),
+  email: z.email("Email must be a valid email"),
+  password: z.string().min(1, "Password is required"),
 });
 
 export const ForgotPasswordBody = z.object({
-  email: Email,
+  email: z.email("Email must be a valid email"),
 });
 
 export const ResetPasswordBody = z.object({
-  email: Email,
-  code: OtpCode,
-  password: z.string().min(8).max(128),
+  email: z.email("Email must be a valid email"),
+  code: z
+    .string()
+    .min(1, "Code is required")
+    .regex(/^\d{6}$/, "Code must be 6 digits"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 chars")
+    .max(32, "Password must be at most 32 chars"),
 });
 
 export type RegisterBodyType = z.infer<typeof RegisterBody>;

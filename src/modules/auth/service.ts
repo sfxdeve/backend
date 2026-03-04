@@ -38,7 +38,8 @@ async function getActiveUserOrThrow(userId: string) {
 }
 
 export async function register(body: RegisterBodyType) {
-  const existing = await User.findOne({ email: body.email }).lean();
+  const email = body.email.trim().toLowerCase();
+  const existing = await User.findOne({ email }).lean();
 
   if (existing) {
     throw new AppError("CONFLICT", "Email already registered");
@@ -48,7 +49,7 @@ export async function register(body: RegisterBodyType) {
 
   const user = await withMongoTransaction(async (session) => {
     const [created] = await User.create(
-      [{ name: body.name, email: body.email, passwordHash }],
+      [{ name: body.name, email, passwordHash }],
       { session },
     );
 
@@ -72,7 +73,8 @@ export async function register(body: RegisterBodyType) {
 }
 
 export async function verifyEmail(body: VerifyEmailBodyType) {
-  const user = await User.findOne({ email: body.email });
+  const email = body.email.trim().toLowerCase();
+  const user = await User.findOne({ email });
 
   if (!user) {
     throw new AppError("NOT_FOUND", "User not found");
@@ -100,7 +102,8 @@ export async function verifyEmail(body: VerifyEmailBodyType) {
 }
 
 export async function login(body: LoginBodyType, userAgent?: string) {
-  const user = await User.findOne({ email: body.email });
+  const email = body.email.trim().toLowerCase();
+  const user = await User.findOne({ email });
 
   if (!user) {
     throw new AppError("UNAUTHORIZED", "Invalid credentials");
@@ -173,7 +176,8 @@ export async function logout(sessionId: string) {
 }
 
 export async function forgotPassword(body: ForgotPasswordBodyType) {
-  const user = await User.findOne({ email: body.email }).lean();
+  const email = body.email.trim().toLowerCase();
+  const user = await User.findOne({ email }).lean();
 
   if (!user) {
     return { message: "If that email exists, a reset code has been sent" };
@@ -191,7 +195,8 @@ export async function forgotPassword(body: ForgotPasswordBodyType) {
 }
 
 export async function resetPassword(body: ResetPasswordBodyType) {
-  const user = await User.findOne({ email: body.email });
+  const email = body.email.trim().toLowerCase();
+  const user = await User.findOne({ email });
 
   if (!user) {
     throw new AppError("NOT_FOUND", "User not found");
