@@ -12,22 +12,185 @@ const ENV_VARS = [
   { key: "accessToken", value: "", type: "secret" },
   { key: "adminEmail", value: "admin@fantabeach.io", type: "default" },
   { key: "adminPassword", value: "CHANGE_ME_IN_PRODUCTION", type: "secret" },
+  { key: "userName", value: "Test User", type: "default" },
+  { key: "userEmail", value: "user@example.com", type: "default" },
+  { key: "userPassword", value: "password123", type: "secret" },
   { key: "championshipId", value: "", type: "default" },
   { key: "tournamentId", value: "", type: "default" },
+  { key: "tournamentStatus", value: "UPCOMING", type: "default" },
+  { key: "tournamentYear", value: "2026", type: "default" },
   { key: "leagueId", value: "", type: "default" },
+  { key: "leagueType", value: "PUBLIC", type: "default" },
+  { key: "leagueStatus", value: "OPEN", type: "default" },
+  { key: "inviteCode", value: "", type: "default" },
   { key: "pairId", value: "", type: "default" },
   { key: "pairAId", value: "", type: "default" },
   { key: "pairBId", value: "", type: "default" },
   { key: "matchId", value: "", type: "default" },
+  { key: "matchRound", value: "POOL", type: "default" },
+  { key: "matchStatus", value: "SCHEDULED", type: "default" },
   { key: "athleteId", value: "", type: "default" },
   { key: "athleteId1", value: "", type: "default" },
   { key: "athleteId2", value: "", type: "default" },
   { key: "athleteAId", value: "", type: "default" },
   { key: "athleteBId", value: "", type: "default" },
+  { key: "gender", value: "M", type: "default" },
+  { key: "search", value: "doe", type: "default" },
+  { key: "page", value: "1", type: "default" },
+  { key: "limit", value: "20", type: "default" },
   { key: "creditPackId", value: "", type: "default" },
   { key: "packId", value: "", type: "default" },
   { key: "userId", value: "", type: "default" },
+  { key: "adminId", value: "", type: "default" },
+  { key: "auditEntity", value: "Wallet", type: "default" },
+  { key: "auditFrom", value: "2026-01-01T00:00:00.000Z", type: "default" },
+  { key: "auditTo", value: "2026-12-31T23:59:59.999Z", type: "default" },
   { key: "stripeSignature", value: "", type: "secret" },
+];
+
+const captureIdEvent = (envKey) => [
+  {
+    listen: "test",
+    script: {
+      exec: [
+        "let res = {};",
+        "try { res = pm.response.json(); } catch (e) {}",
+        "const id = (res.data && (res.data._id || res.data.id)) || '';",
+        `if (res.success && id) pm.environment.set('${envKey}', String(id));`,
+      ],
+      type: "text/javascript",
+    },
+  },
+];
+
+const loginCaptureEvent = [
+  {
+    listen: "test",
+    script: {
+      exec: [
+        "let res = {};",
+        "try { res = pm.response.json(); } catch (e) {}",
+        "if (res.success && res.data && res.data.accessToken) {",
+        "  pm.environment.set('accessToken', String(res.data.accessToken));",
+        "}",
+        "const userId = res.data && res.data.user && (res.data.user._id || res.data.user.id);",
+        "if (userId) pm.environment.set('userId', String(userId));",
+        "if (userId && pm.info && pm.info.requestName === 'Login (Admin)') {",
+        "  pm.environment.set('adminId', String(userId));",
+        "}",
+      ],
+      type: "text/javascript",
+    },
+  },
+];
+
+const captureAthleteIdsEvent = [
+  {
+    listen: "test",
+    script: {
+      exec: [
+        "let res = {};",
+        "try { res = pm.response.json(); } catch (e) {}",
+        "const id = (res.data && (res.data._id || res.data.id)) || '';",
+        "if (res.success && id) {",
+        "  pm.environment.set('athleteId', String(id));",
+        "  const athleteId1 = pm.environment.get('athleteId1');",
+        "  const athleteId2 = pm.environment.get('athleteId2');",
+        "  if (!athleteId1) {",
+        "    pm.environment.set('athleteId1', String(id));",
+        "  } else if (athleteId1 !== String(id) && !athleteId2) {",
+        "    pm.environment.set('athleteId2', String(id));",
+        "  }",
+        "  const athleteAId = pm.environment.get('athleteAId');",
+        "  const athleteBId = pm.environment.get('athleteBId');",
+        "  if (!athleteAId) {",
+        "    pm.environment.set('athleteAId', String(id));",
+        "  } else if (athleteAId !== String(id) && !athleteBId) {",
+        "    pm.environment.set('athleteBId', String(id));",
+        "  }",
+        "}",
+      ],
+      type: "text/javascript",
+    },
+  },
+];
+
+const capturePairIdsEvent = [
+  {
+    listen: "test",
+    script: {
+      exec: [
+        "let res = {};",
+        "try { res = pm.response.json(); } catch (e) {}",
+        "const id = (res.data && (res.data._id || res.data.id)) || '';",
+        "if (res.success && id) {",
+        "  pm.environment.set('pairId', String(id));",
+        "  const pairAId = pm.environment.get('pairAId');",
+        "  const pairBId = pm.environment.get('pairBId');",
+        "  if (!pairAId) {",
+        "    pm.environment.set('pairAId', String(id));",
+        "  } else if (pairAId !== String(id) && !pairBId) {",
+        "    pm.environment.set('pairBId', String(id));",
+        "  }",
+        "}",
+      ],
+      type: "text/javascript",
+    },
+  },
+];
+
+const captureLeagueEvent = [
+  {
+    listen: "test",
+    script: {
+      exec: [
+        "let res = {};",
+        "try { res = pm.response.json(); } catch (e) {}",
+        "const id = (res.data && (res.data._id || res.data.id)) || '';",
+        "if (res.success && id) pm.environment.set('leagueId', String(id));",
+        "if (res.success && res.data && res.data.inviteCode) {",
+        "  pm.environment.set('inviteCode', String(res.data.inviteCode));",
+        "}",
+      ],
+      type: "text/javascript",
+    },
+  },
+];
+
+const capturePackEvent = [
+  {
+    listen: "test",
+    script: {
+      exec: [
+        "let res = {};",
+        "try { res = pm.response.json(); } catch (e) {}",
+        "const id = (res.data && (res.data._id || res.data.id)) || '';",
+        "if (res.success && id) {",
+        "  pm.environment.set('packId', String(id));",
+        "  pm.environment.set('creditPackId', String(id));",
+        "}",
+      ],
+      type: "text/javascript",
+    },
+  },
+];
+
+const captureFirstPackEvent = [
+  {
+    listen: "test",
+    script: {
+      exec: [
+        "let res = {};",
+        "try { res = pm.response.json(); } catch (e) {}",
+        "if (res.success && Array.isArray(res.data) && res.data.length > 0) {",
+        "  const first = res.data[0];",
+        "  const id = first && (first._id || first.id);",
+        "  if (id) pm.environment.set('creditPackId', String(id));",
+        "}",
+      ],
+      type: "text/javascript",
+    },
+  },
 ];
 
 const collection = {
@@ -77,7 +240,7 @@ const collection = {
             header: [{ key: "Content-Type", value: "application/json" }],
             body: {
               mode: "raw",
-              raw: '{\n  "name": "Test User",\n  "email": "user@example.com",\n  "password": "password123"\n}',
+              raw: '{\n  "name": "{{userName}}",\n  "email": "{{userEmail}}",\n  "password": "{{userPassword}}"\n}',
             },
             url: "{{baseUrl}}{{apiPrefix}}/auth/register",
           },
@@ -90,27 +253,14 @@ const collection = {
             header: [{ key: "Content-Type", value: "application/json" }],
             body: {
               mode: "raw",
-              raw: '{\n  "email": "{{adminEmail}}",\n  "code": "123456"\n}',
+              raw: '{\n  "email": "{{userEmail}}",\n  "code": "123456"\n}',
             },
             url: "{{baseUrl}}{{apiPrefix}}/auth/verify-email",
           },
         },
         {
-          name: "Login",
-          event: [
-            {
-              listen: "test",
-              script: {
-                exec: [
-                  "const res = pm.response.json();",
-                  "if (res.success && res.data && res.data.accessToken) {",
-                  "  pm.environment.set('accessToken', res.data.accessToken);",
-                  "}",
-                ],
-                type: "text/javascript",
-              },
-            },
-          ],
+          name: "Login (Admin)",
+          event: loginCaptureEvent,
           request: {
             auth: { type: "noauth" },
             method: "POST",
@@ -118,6 +268,20 @@ const collection = {
             body: {
               mode: "raw",
               raw: '{\n  "email": "{{adminEmail}}",\n  "password": "{{adminPassword}}"\n}',
+            },
+            url: "{{baseUrl}}{{apiPrefix}}/auth/login",
+          },
+        },
+        {
+          name: "Login (User)",
+          event: loginCaptureEvent,
+          request: {
+            auth: { type: "noauth" },
+            method: "POST",
+            header: [{ key: "Content-Type", value: "application/json" }],
+            body: {
+              mode: "raw",
+              raw: '{\n  "email": "{{userEmail}}",\n  "password": "{{userPassword}}"\n}',
             },
             url: "{{baseUrl}}{{apiPrefix}}/auth/login",
           },
@@ -147,7 +311,7 @@ const collection = {
             header: [{ key: "Content-Type", value: "application/json" }],
             body: {
               mode: "raw",
-              raw: '{\n  "email": "{{adminEmail}}"\n}',
+              raw: '{\n  "email": "{{userEmail}}"\n}',
             },
             url: "{{baseUrl}}{{apiPrefix}}/auth/forgot-password",
           },
@@ -160,7 +324,7 @@ const collection = {
             header: [{ key: "Content-Type", value: "application/json" }],
             body: {
               mode: "raw",
-              raw: '{\n  "email": "{{adminEmail}}",\n  "code": "123456",\n  "password": "newpassword123"\n}',
+              raw: '{\n  "email": "{{userEmail}}",\n  "code": "123456",\n  "password": "newpassword123"\n}',
             },
             url: "{{baseUrl}}{{apiPrefix}}/auth/reset-password",
           },
@@ -180,12 +344,13 @@ const collection = {
         },
         {
           name: "Create Championship",
+          event: captureIdEvent("championshipId"),
           request: {
             method: "POST",
             header: [{ key: "Content-Type", value: "application/json" }],
             body: {
               mode: "raw",
-              raw: '{\n  "name": "World Tour 2025",\n  "gender": "M",\n  "seasonYear": 2025\n}',
+              raw: '{\n  "name": "World Tour 2026",\n  "gender": "M",\n  "seasonYear": 2026\n}',
             },
             url: "{{baseUrl}}{{apiPrefix}}/championships",
           },
@@ -205,7 +370,7 @@ const collection = {
             header: [{ key: "Content-Type", value: "application/json" }],
             body: {
               mode: "raw",
-              raw: '{\n  "name": "World Tour 2025 Updated",\n  "gender": "M",\n  "seasonYear": 2025\n}',
+              raw: '{\n  "name": "World Tour 2026 Updated",\n  "gender": "M",\n  "seasonYear": 2026\n}',
             },
             url: "{{baseUrl}}{{apiPrefix}}/championships/{{championshipId}}",
           },
@@ -224,13 +389,43 @@ const collection = {
           },
         },
         {
-          name: "Create Athlete",
+          name: "List Athletes (Filtered + Paginated)",
+          request: {
+            method: "GET",
+            header: [],
+            url: "{{baseUrl}}{{apiPrefix}}/athletes?gender={{gender}}&search={{search}}&page={{page}}&limit={{limit}}",
+          },
+        },
+        {
+          name: "List Athletes (By Championship)",
+          request: {
+            method: "GET",
+            header: [],
+            url: "{{baseUrl}}{{apiPrefix}}/athletes?championshipId={{championshipId}}&page={{page}}&limit={{limit}}",
+          },
+        },
+        {
+          name: "Create Athlete A",
+          event: captureAthleteIdsEvent,
           request: {
             method: "POST",
             header: [{ key: "Content-Type", value: "application/json" }],
             body: {
               mode: "raw",
               raw: '{\n  "firstName": "John",\n  "lastName": "Doe",\n  "gender": "M",\n  "championshipId": "{{championshipId}}",\n  "entryPoints": 0,\n  "globalPoints": 0,\n  "fantacoinCost": 0\n}',
+            },
+            url: "{{baseUrl}}{{apiPrefix}}/athletes",
+          },
+        },
+        {
+          name: "Create Athlete B",
+          event: captureAthleteIdsEvent,
+          request: {
+            method: "POST",
+            header: [{ key: "Content-Type", value: "application/json" }],
+            body: {
+              mode: "raw",
+              raw: '{\n  "firstName": "Jane",\n  "lastName": "Roe",\n  "gender": "M",\n  "championshipId": "{{championshipId}}",\n  "entryPoints": 0,\n  "globalPoints": 0,\n  "fantacoinCost": 0\n}',
             },
             url: "{{baseUrl}}{{apiPrefix}}/athletes",
           },
@@ -269,13 +464,30 @@ const collection = {
           },
         },
         {
+          name: "List Tournaments (Filtered + Paginated)",
+          request: {
+            method: "GET",
+            header: [],
+            url: "{{baseUrl}}{{apiPrefix}}/tournaments?status={{tournamentStatus}}&year={{tournamentYear}}&page={{page}}&limit={{limit}}",
+          },
+        },
+        {
+          name: "List Tournaments (By Championship)",
+          request: {
+            method: "GET",
+            header: [],
+            url: "{{baseUrl}}{{apiPrefix}}/tournaments?championshipId={{championshipId}}&page={{page}}&limit={{limit}}",
+          },
+        },
+        {
           name: "Create Tournament",
+          event: captureIdEvent("tournamentId"),
           request: {
             method: "POST",
             header: [{ key: "Content-Type", value: "application/json" }],
             body: {
               mode: "raw",
-              raw: '{\n  "championshipId": "{{championshipId}}",\n  "location": "Rome",\n  "startDate": "2025-05-01T00:00:00.000Z",\n  "endDate": "2025-05-07T00:00:00.000Z"\n}',
+              raw: '{\n  "championshipId": "{{championshipId}}",\n  "location": "Rome",\n  "startDate": "2026-05-01T00:00:00.000Z",\n  "endDate": "2026-05-07T00:00:00.000Z"\n}',
             },
             url: "{{baseUrl}}{{apiPrefix}}/tournaments",
           },
@@ -309,13 +521,27 @@ const collection = {
           },
         },
         {
-          name: "Add Pair",
+          name: "Add Pair A",
+          event: capturePairIdsEvent,
           request: {
             method: "POST",
             header: [{ key: "Content-Type", value: "application/json" }],
             body: {
               mode: "raw",
               raw: '{\n  "athleteAId": "{{athleteAId}}",\n  "athleteBId": "{{athleteBId}}",\n  "entryStatus": "DIRECT",\n  "seedRank": 1\n}',
+            },
+            url: "{{baseUrl}}{{apiPrefix}}/tournaments/{{tournamentId}}/pairs",
+          },
+        },
+        {
+          name: "Add Pair B",
+          event: capturePairIdsEvent,
+          request: {
+            method: "POST",
+            header: [{ key: "Content-Type", value: "application/json" }],
+            body: {
+              mode: "raw",
+              raw: '{\n  "athleteAId": "{{athleteBId}}",\n  "athleteBId": "{{athleteAId}}",\n  "entryStatus": "QUALIFICATION",\n  "seedRank": 2\n}',
             },
             url: "{{baseUrl}}{{apiPrefix}}/tournaments/{{tournamentId}}/pairs",
           },
@@ -366,13 +592,30 @@ const collection = {
           },
         },
         {
+          name: "List Matches (Filtered)",
+          request: {
+            method: "GET",
+            header: [],
+            url: "{{baseUrl}}{{apiPrefix}}/matches?round={{matchRound}}&status={{matchStatus}}",
+          },
+        },
+        {
+          name: "List Matches (By Tournament)",
+          request: {
+            method: "GET",
+            header: [],
+            url: "{{baseUrl}}{{apiPrefix}}/matches?tournamentId={{tournamentId}}",
+          },
+        },
+        {
           name: "Create Match",
+          event: captureIdEvent("matchId"),
           request: {
             method: "POST",
             header: [{ key: "Content-Type", value: "application/json" }],
             body: {
               mode: "raw",
-              raw: '{\n  "tournamentId": "{{tournamentId}}",\n  "round": "POOL",\n  "pairAId": "{{pairAId}}",\n  "pairBId": "{{pairBId}}"\n}',
+              raw: '{\n  "tournamentId": "{{tournamentId}}",\n  "round": "{{matchRound}}",\n  "pairAId": "{{pairAId}}",\n  "pairBId": "{{pairBId}}"\n}',
             },
             url: "{{baseUrl}}{{apiPrefix}}/matches",
           },
@@ -411,13 +654,43 @@ const collection = {
           },
         },
         {
+          name: "List Leagues (Filtered + Paginated)",
+          request: {
+            method: "GET",
+            header: [],
+            url: "{{baseUrl}}{{apiPrefix}}/leagues?type={{leagueType}}&status={{leagueStatus}}&page={{page}}&limit={{limit}}",
+          },
+        },
+        {
+          name: "List Leagues (By Championship)",
+          request: {
+            method: "GET",
+            header: [],
+            url: "{{baseUrl}}{{apiPrefix}}/leagues?championshipId={{championshipId}}&page={{page}}&limit={{limit}}",
+          },
+        },
+        {
           name: "Create League",
+          event: captureLeagueEvent,
           request: {
             method: "POST",
             header: [{ key: "Content-Type", value: "application/json" }],
             body: {
               mode: "raw",
-              raw: '{\n  "name": "My League",\n  "type": "PUBLIC",\n  "championshipId": "{{championshipId}}",\n  "rankingMode": "OVERALL",\n  "rosterSize": 8,\n  "startersPerGameweek": 6,\n  "initialBudget": 100,\n  "marketEnabled": false\n}',
+              raw: '{\n  "name": "My League",\n  "type": "PUBLIC",\n  "championshipId": "{{championshipId}}",\n  "rankingMode": "OVERALL",\n  "rosterSize": 2,\n  "startersPerGameweek": 1,\n  "initialBudget": 100,\n  "marketEnabled": false\n}',
+            },
+            url: "{{baseUrl}}{{apiPrefix}}/leagues",
+          },
+        },
+        {
+          name: "Create Private League",
+          event: captureLeagueEvent,
+          request: {
+            method: "POST",
+            header: [{ key: "Content-Type", value: "application/json" }],
+            body: {
+              mode: "raw",
+              raw: '{\n  "name": "My Private League",\n  "type": "PRIVATE",\n  "championshipId": "{{championshipId}}",\n  "rankingMode": "OVERALL",\n  "rosterSize": 2,\n  "startersPerGameweek": 1,\n  "initialBudget": 100,\n  "marketEnabled": false\n}',
             },
             url: "{{baseUrl}}{{apiPrefix}}/leagues",
           },
@@ -437,7 +710,7 @@ const collection = {
             header: [{ key: "Content-Type", value: "application/json" }],
             body: {
               mode: "raw",
-              raw: '{\n  "teamName": "My Fantasy Team",\n  "inviteCode": ""\n}',
+              raw: '{\n  "teamName": "My Fantasy Team",\n  "inviteCode": "{{inviteCode}}"\n}',
             },
             url: "{{baseUrl}}{{apiPrefix}}/leagues/{{leagueId}}/join",
           },
@@ -448,6 +721,14 @@ const collection = {
             method: "GET",
             header: [],
             url: "{{baseUrl}}{{apiPrefix}}/leagues/{{leagueId}}/standings",
+          },
+        },
+        {
+          name: "Get Standings (By Tournament)",
+          request: {
+            method: "GET",
+            header: [],
+            url: "{{baseUrl}}{{apiPrefix}}/leagues/{{leagueId}}/standings?tournamentId={{tournamentId}}",
           },
         },
       ],
@@ -502,7 +783,7 @@ const collection = {
             header: [{ key: "Content-Type", value: "application/json" }],
             body: {
               mode: "raw",
-              raw: '{\n  "slots": [\n    { "athleteId": "{{athleteId}}", "role": "STARTER" },\n    { "athleteId": "{{athleteId2}}", "role": "BENCH", "benchOrder": 1 }\n  ]\n}',
+              raw: '{\n  "slots": [\n    { "athleteId": "{{athleteId1}}", "role": "STARTER" },\n    { "athleteId": "{{athleteId2}}", "role": "BENCH", "benchOrder": 1 }\n  ]\n}',
             },
             url: "{{baseUrl}}{{apiPrefix}}/leagues/{{leagueId}}/team/lineup/{{tournamentId}}",
           },
@@ -514,6 +795,7 @@ const collection = {
       item: [
         {
           name: "List Credit Packs",
+          event: captureFirstPackEvent,
           request: {
             method: "GET",
             header: [],
@@ -541,7 +823,16 @@ const collection = {
           },
         },
         {
+          name: "Get Wallet (Paginated)",
+          request: {
+            method: "GET",
+            header: [],
+            url: "{{baseUrl}}{{apiPrefix}}/credits/wallet?page={{page}}&limit={{limit}}",
+          },
+        },
+        {
           name: "Create Pack (Admin)",
+          event: capturePackEvent,
           request: {
             method: "POST",
             header: [{ key: "Content-Type", value: "application/json" }],
@@ -603,6 +894,22 @@ const collection = {
             url: "{{baseUrl}}{{apiPrefix}}/admin/audit-log",
           },
         },
+        {
+          name: "Audit Log (Filtered + Paginated)",
+          request: {
+            method: "GET",
+            header: [],
+            url: "{{baseUrl}}{{apiPrefix}}/admin/audit-log?entity={{auditEntity}}&page={{page}}&limit={{limit}}",
+          },
+        },
+        {
+          name: "Audit Log (By Admin + Date Range)",
+          request: {
+            method: "GET",
+            header: [],
+            url: "{{baseUrl}}{{apiPrefix}}/admin/audit-log?adminId={{adminId}}&from={{auditFrom}}&to={{auditTo}}&page={{page}}&limit={{limit}}",
+          },
+        },
       ],
     },
   ],
@@ -622,13 +929,13 @@ const environment = {
 
 writeFileSync(
   join(postmanDir, "Fantabeach API.postman_collection.json"),
-  JSON.stringify(collection, null, 2),
+  `${JSON.stringify(collection, null, 2)}\n`,
   "utf8",
 );
 
 writeFileSync(
   join(postmanDir, "Fantabeach Local.postman_environment.json"),
-  JSON.stringify(environment, null, 2),
+  `${JSON.stringify(environment, null, 2)}\n`,
   "utf8",
 );
 
