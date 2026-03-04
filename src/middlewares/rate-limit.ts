@@ -23,6 +23,14 @@ export const authRateLimiter = expressRateLimit({
   handler: rateLimitHandler,
 });
 
+export const refreshRateLimiter = expressRateLimit({
+  limit: 30,
+  windowMs: 60 * 1000,
+  legacyHeaders: false,
+  standardHeaders: true,
+  handler: rateLimitHandler,
+});
+
 export const defaultRateLimiter = expressRateLimit({
   limit: 120,
   windowMs: 60 * 1000,

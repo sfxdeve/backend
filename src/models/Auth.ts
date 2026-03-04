@@ -42,6 +42,7 @@ export interface ISession extends Document {
   userId: Types.ObjectId;
   userAgent: string;
   isRevoked: boolean;
+  expiresAt: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -56,14 +57,12 @@ const SessionSchema = new Schema<ISession>(
     },
     userAgent: { type: String, default: "" },
     isRevoked: { type: Boolean, default: false },
+    expiresAt: { type: Date, required: true },
   },
   { timestamps: true },
 );
 
-SessionSchema.index(
-  { createdAt: 1 },
-  { expireAfterSeconds: 60 * 60 * 24 * 30 },
-);
+SessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export const Session = mongoose.model<ISession>("Session", SessionSchema);
 
@@ -82,6 +81,6 @@ const OtpSchema = new Schema<IOtp>({
 });
 
 OtpSchema.index({ userId: 1, purpose: 1 });
-OtpSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // TTL: auto-expire at expiresAt
+OtpSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export const Otp = mongoose.model<IOtp>("Otp", OtpSchema);

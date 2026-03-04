@@ -16,8 +16,14 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z
     .string()
     .min(16, "JWT_REFRESH_SECRET must be at least 16 chars"),
-  JWT_ACCESS_TTL: z.string().default("15m"),
-  JWT_REFRESH_TTL: z.string().default("30d"),
+  JWT_ACCESS_TTL: z
+    .string()
+    .regex(/^\d+[smhd]$/i, "JWT_ACCESS_TTL must be like 15m, 1h, or 30d")
+    .default("15m"),
+  JWT_REFRESH_TTL: z
+    .string()
+    .regex(/^\d+[smhd]$/i, "JWT_REFRESH_TTL must be like 15m, 1h, or 30d")
+    .default("30d"),
   ADMIN_NAME: z.string().min(1).default("Admin"),
   ADMIN_EMAIL: z.email("ADMIN_EMAIL must be valid email"),
   ADMIN_PASSWORD: z.string().min(8, "ADMIN_PASSWORD must be at least 8 chars"),

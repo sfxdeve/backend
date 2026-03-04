@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import { User } from "../models/Auth.js";
 import { AppError } from "../lib/errors.js";
 import { extractBearerToken, verifyAccessToken } from "../lib/jwt.js";
 import { validateSession } from "../lib/session.js";
@@ -17,16 +18,25 @@ export async function requireAuth(
 
   try {
     const payload = verifyAccessToken(token);
+    const validSession = await validateSession(payload.sessionId, payload.sub);
 
-    const valid = await validateSession(payload.sessionId);
-
-    if (!valid) {
+    if (!validSession) {
       next(new AppError("UNAUTHORIZED", "Session invalid or revoked"));
       return;
     }
+
+    const user = await User.findById(payload.sub)
+      .select("role isBlocked")
+      .lean();
+
+    if (!user || user.isBlocked) {
+      next(new AppError("UNAUTHORIZED", "User not found or blocked"));
+      return;
+    }
+
     req.auth = {
       userId: payload.sub,
-      role: payload.role,
+      role: user.role,
       sessionId: payload.sessionId,
     };
 

@@ -11,8 +11,8 @@ import {
 import {
   createSession,
   revokeSession,
+  revokeSessionIfActive,
   revokeAllUserSessions,
-  validateSession,
 } from "../../lib/session.js";
 import { createOtp, verifyOtp } from "../../lib/otp.js";
 import { sendEmail } from "../../lib/mailer.js";
@@ -24,6 +24,18 @@ import type {
   ForgotPasswordBodyType,
   ResetPasswordBodyType,
 } from "./schema.js";
+
+async function getActiveUserOrThrow(userId: string) {
+  const user = await User.findById(userId)
+    .select("_id role isBlocked isVerified")
+    .lean();
+
+  if (!user || user.isBlocked || !user.isVerified) {
+    throw new AppError("UNAUTHORIZED", "User not found or blocked");
+  }
+
+  return user;
+}
 
 export async function register(body: RegisterBodyType) {
   const existing = await User.findOne({ email: body.email }).lean();
@@ -131,20 +143,12 @@ export async function login(body: LoginBodyType, userAgent?: string) {
 
 export async function refreshTokens(token: string, userAgent?: string) {
   const payload = verifyRefreshToken(token);
+  const user = await getActiveUserOrThrow(payload.sub);
+  const rotated = await revokeSessionIfActive(payload.sessionId, payload.sub);
 
-  const valid = await validateSession(payload.sessionId);
-
-  if (!valid) {
+  if (!rotated) {
     throw new AppError("UNAUTHORIZED", "Session invalid or expired");
   }
-
-  const user = await User.findById(payload.sub).lean();
-
-  if (!user || user.isBlocked) {
-    throw new AppError("UNAUTHORIZED", "User not found or blocked");
-  }
-
-  await revokeSession(payload.sessionId);
 
   const newSessionId = await createSession(String(user._id), userAgent);
   const newPayload = {

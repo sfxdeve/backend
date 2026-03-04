@@ -1,28 +1,34 @@
 import { z } from "zod";
 
+const Email = z.string().trim().toLowerCase().email();
+const OtpCode = z
+  .string()
+  .trim()
+  .regex(/^\d{6}$/, "Code must be 6 digits");
+
 export const RegisterBody = z.object({
-  name: z.string().min(2).max(100),
-  email: z.email(),
+  name: z.string().trim().min(2).max(100),
+  email: Email,
   password: z.string().min(8).max(128),
 });
 
 export const VerifyEmailBody = z.object({
-  email: z.email(),
-  code: z.string().length(6),
+  email: Email,
+  code: OtpCode,
 });
 
 export const LoginBody = z.object({
-  email: z.email(),
+  email: Email,
   password: z.string().min(1),
 });
 
 export const ForgotPasswordBody = z.object({
-  email: z.email(),
+  email: Email,
 });
 
 export const ResetPasswordBody = z.object({
-  email: z.email(),
-  code: z.string().length(6),
+  email: Email,
+  code: OtpCode,
   password: z.string().min(8).max(128),
 });
 

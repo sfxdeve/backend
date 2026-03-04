@@ -9,8 +9,13 @@ import { requireAuth } from "../../middlewares/auth.js";
 import {
   authRateLimiter,
   otpRateLimiter,
+  refreshRateLimiter,
 } from "../../middlewares/rate-limit.js";
-import { env } from "../../lib/env.js";
+import {
+  refreshCookieClearOptions,
+  refreshCookieOptions,
+  refreshTokenCookieName,
+} from "../../lib/auth-config.js";
 import { AppError } from "../../lib/errors.js";
 import * as service from "./service.js";
 import {
@@ -22,15 +27,6 @@ import {
 } from "./schema.js";
 
 const router = Router();
-
-const REFRESH_COOKIE = "refreshToken";
-
-const COOKIE_OPTS = {
-  httpOnly: true,
-  secure: env.NODE_ENV === "production",
-  sameSite: "strict" as const,
-  maxAge: 30 * 24 * 60 * 60 * 1000,
-};
 
 router.post(
   "/register",
@@ -62,17 +58,20 @@ router.post(
     const userAgent = req.headers["user-agent"];
     const result = await service.login(req.body, userAgent);
 
-    res.cookie(REFRESH_COOKIE, result.refreshToken, COOKIE_OPTS).json({
-      success: true,
-      data: { accessToken: result.accessToken, user: result.user },
-    });
+    res
+      .cookie(refreshTokenCookieName, result.refreshToken, refreshCookieOptions)
+      .json({
+        success: true,
+        data: { accessToken: result.accessToken, user: result.user },
+      });
   },
 );
 
 router.post(
   "/refresh",
+  refreshRateLimiter,
   async (req: Request, res: Response, next: NextFunction) => {
-    const token = req.cookies?.[REFRESH_COOKIE] as string | undefined;
+    const token = req.cookies?.[refreshTokenCookieName] as string | undefined;
 
     if (!token) {
       next(new AppError("UNAUTHORIZED", "No refresh token"));
@@ -84,7 +83,7 @@ router.post(
     const result = await service.refreshTokens(token, userAgent);
 
     res
-      .cookie(REFRESH_COOKIE, result.refreshToken, COOKIE_OPTS)
+      .cookie(refreshTokenCookieName, result.refreshToken, refreshCookieOptions)
       .json({ success: true, data: { accessToken: result.accessToken } });
   },
 );
@@ -93,13 +92,13 @@ router.post("/logout", requireAuth, async (req: Request, res: Response) => {
   await service.logout(req.auth!.sessionId);
 
   res
-    .clearCookie(REFRESH_COOKIE)
+    .clearCookie(refreshTokenCookieName, refreshCookieClearOptions)
     .json({ success: true, data: { message: "Logged out" } });
 });
 
 router.post(
   "/forgot-password",
-  authRateLimiter,
+  otpRateLimiter,
   validateRequest({ body: ForgotPasswordBody }),
   async (req: Request, res: Response) => {
     const result = await service.forgotPassword(req.body);
@@ -110,7 +109,7 @@ router.post(
 
 router.post(
   "/reset-password",
-  authRateLimiter,
+  otpRateLimiter,
   validateRequest({ body: ResetPasswordBody }),
   async (req: Request, res: Response) => {
     const result = await service.resetPassword(req.body);
