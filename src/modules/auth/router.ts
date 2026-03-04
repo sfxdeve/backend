@@ -7,11 +7,6 @@ import {
 import { validateRequest } from "../../middlewares/validate-request.js";
 import { requireAuth } from "../../middlewares/auth.js";
 import {
-  authRateLimiter,
-  otpRateLimiter,
-  refreshRateLimiter,
-} from "../../middlewares/rate-limit.js";
-import {
   refreshCookieClearOptions,
   refreshCookieOptions,
   refreshTokenCookieName,
@@ -30,7 +25,6 @@ const router = Router();
 
 router.post(
   "/register",
-  authRateLimiter,
   validateRequest({ body: RegisterBody }),
   async (req: Request, res: Response) => {
     const result = await service.register(req.body);
@@ -41,7 +35,6 @@ router.post(
 
 router.post(
   "/verify-email",
-  otpRateLimiter,
   validateRequest({ body: VerifyEmailBody }),
   async (req: Request, res: Response) => {
     const result = await service.verifyEmail(req.body);
@@ -52,7 +45,6 @@ router.post(
 
 router.post(
   "/login",
-  authRateLimiter,
   validateRequest({ body: LoginBody }),
   async (req: Request, res: Response) => {
     const userAgent = req.headers["user-agent"];
@@ -69,7 +61,6 @@ router.post(
 
 router.post(
   "/refresh",
-  refreshRateLimiter,
   async (req: Request, res: Response, next: NextFunction) => {
     const token = req.cookies?.[refreshTokenCookieName] as string | undefined;
 
@@ -98,7 +89,6 @@ router.post("/logout", requireAuth, async (req: Request, res: Response) => {
 
 router.post(
   "/forgot-password",
-  otpRateLimiter,
   validateRequest({ body: ForgotPasswordBody }),
   async (req: Request, res: Response) => {
     const result = await service.forgotPassword(req.body);
@@ -109,7 +99,6 @@ router.post(
 
 router.post(
   "/reset-password",
-  otpRateLimiter,
   validateRequest({ body: ResetPasswordBody }),
   async (req: Request, res: Response) => {
     const result = await service.resetPassword(req.body);

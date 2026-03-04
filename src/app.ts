@@ -9,7 +9,10 @@ import { env } from "./lib/env.js";
 import { logger } from "./lib/logger.js";
 import { connectDb, disconnectDb, isDbConnected } from "./lib/db.js";
 import { seedAdmin, seedCreditPacks } from "./lib/seed.js";
-import { defaultRateLimiter } from "./middlewares/rate-limit.js";
+import {
+  authRateLimiter,
+  defaultRateLimiter,
+} from "./middlewares/rate-limit.js";
 import { notFoundHandler, errorHandler } from "./middlewares/error-handler.js";
 import authRouter from "./modules/auth/router.js";
 import championshipsRouter from "./modules/championships/router.js";
@@ -91,7 +94,7 @@ export async function bootstrap(): Promise<{
     res.json({ status: "ok" });
   });
 
-  app.use(`${prefix}/auth`, authRouter);
+  app.use(`${prefix}/auth`, authRateLimiter, authRouter);
   app.use(`${prefix}/championships`, championshipsRouter);
   app.use(`${prefix}/athletes`, athletesRouter);
   app.use(`${prefix}/tournaments`, tournamentsRouter);

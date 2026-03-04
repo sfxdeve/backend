@@ -15,22 +15,6 @@ function rateLimitHandler(
   );
 }
 
-export const authRateLimiter = expressRateLimit({
-  limit: 20,
-  windowMs: 60 * 1000,
-  legacyHeaders: false,
-  standardHeaders: true,
-  handler: rateLimitHandler,
-});
-
-export const refreshRateLimiter = expressRateLimit({
-  limit: 30,
-  windowMs: 60 * 1000,
-  legacyHeaders: false,
-  standardHeaders: true,
-  handler: rateLimitHandler,
-});
-
 export const defaultRateLimiter = expressRateLimit({
   limit: 120,
   windowMs: 60 * 1000,
@@ -39,8 +23,8 @@ export const defaultRateLimiter = expressRateLimit({
   handler: rateLimitHandler,
 });
 
-export const otpRateLimiter = expressRateLimit({
-  limit: 8,
+export const authRateLimiter = expressRateLimit({
+  limit: 20,
   windowMs: 60 * 1000,
   legacyHeaders: false,
   standardHeaders: true,
