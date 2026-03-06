@@ -35,6 +35,7 @@ export async function isSessionActive(
   const count = await prisma.session.count({
     where,
   });
+
   return count > 0;
 }
 

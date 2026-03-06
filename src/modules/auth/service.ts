@@ -8,17 +8,15 @@ import {
 } from "../../lib/jwt.js";
 import { createSession, revokeSessions } from "../../lib/session.js";
 import { createOtp, verifyOtp } from "../../lib/otp.js";
-import {
-  sendEmail,
-  sendResetPasswordOtp,
-  sendVerificationOtp,
-} from "../../lib/mailer.js";
+import { sendResetPasswordOtp, sendVerificationOtp } from "../../lib/mailer.js";
 import { OtpPurpose } from "../../prisma/generated/enums.js";
 import { userAuthSelector, userSelector } from "../../prisma/selectors.js";
 import type {
   RegisterBodyType,
-  LoginBodyType,
   VerifyEmailBodyType,
+  LoginBodyType,
+  RefreshTokenBodyType,
+  LogoutBodyType,
   ForgotPasswordBodyType,
   ResetPasswordBodyType,
 } from "./schema.js";
@@ -92,7 +90,7 @@ export async function verifyEmail(body: VerifyEmailBodyType) {
   return { message: "Email verified successfully" };
 }
 
-export async function login(body: LoginBodyType, userAgent?: string) {
+export async function login(body: LoginBodyType) {
   const email = body.email.trim().toLowerCase();
 
   const user = await prisma.user.findUnique({
@@ -121,7 +119,7 @@ export async function login(body: LoginBodyType, userAgent?: string) {
     throw new AppError("FORBIDDEN", "Your account has been suspended");
   }
 
-  const sessionId = await createSession(user.id, userAgent);
+  const sessionId = await createSession(user.id, body.userAgent);
   const payload = { sub: user.id, role: user.role, sessionId };
   const accessToken = signAccessToken(payload);
   const refreshToken = signRefreshToken({ sub: user.id, sessionId });
@@ -132,8 +130,8 @@ export async function login(body: LoginBodyType, userAgent?: string) {
   };
 }
 
-export async function refreshTokens(token: string, userAgent?: string) {
-  const payload = verifyRefreshToken(token);
+export async function refreshTokens(body: RefreshTokenBodyType) {
+  const payload = verifyRefreshToken(body.refreshToken);
 
   const user = await prisma.user.findUnique({
     where: { id: payload.sub },
@@ -154,7 +152,7 @@ export async function refreshTokens(token: string, userAgent?: string) {
     throw new AppError("UNAUTHORIZED", "Session invalid or expired");
   }
 
-  const newSessionId = await createSession(user.id, userAgent);
+  const newSessionId = await createSession(user.id, body.userAgent);
 
   const newPayload = {
     sub: user.id,
@@ -171,8 +169,8 @@ export async function refreshTokens(token: string, userAgent?: string) {
   return { accessToken, refreshToken };
 }
 
-export async function logout(sessionId: string) {
-  await revokeSessions({ sessionId });
+export async function logout(body: LogoutBodyType) {
+  await revokeSessions({ sessionId: body.sessionId });
 
   return { message: "Logged out successfully" };
 }

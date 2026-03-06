@@ -19,9 +19,13 @@ export async function requireAuth(
 
   try {
     const payload = verifyAccessToken(token);
-    const validSession = await isSessionActive(payload.sessionId, payload.sub);
 
-    if (!validSession) {
+    const isValidSession = await isSessionActive(
+      payload.sessionId,
+      payload.sub,
+    );
+
+    if (!isValidSession) {
       next(new AppError("UNAUTHORIZED", "Session invalid or revoked"));
       return;
     }
@@ -56,11 +60,13 @@ export async function requireAdmin(
   await requireAuth(req, res, (error?: unknown) => {
     if (error) {
       next(error);
+
       return;
     }
 
     if (!req.auth || req.auth.role !== "ADMIN") {
       next(new AppError("FORBIDDEN", "Admin access required"));
+
       return;
     }
 
