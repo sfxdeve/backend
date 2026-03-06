@@ -54,7 +54,7 @@ router.post(
   },
 );
 
-router.put(
+router.patch(
   "/:id",
   requireAdmin,
   validateRequest({ params: ChampionshipParamsSchema }),
