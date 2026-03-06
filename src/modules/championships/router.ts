@@ -3,12 +3,12 @@ import { validateRequest } from "../../middlewares/validate-request.js";
 import { requireAuth, requireAdmin } from "../../middlewares/auth.js";
 import * as service from "./service.js";
 import {
+  type ChampionshipQueryType,
   ChampionshipQuerySchema,
+  type ChampionshipParamsType,
   ChampionshipParamsSchema,
   CreateChampionshipBodySchema,
   UpdateChampionshipBodySchema,
-  type ChampionshipQueryType,
-  ChampionshipParamsType,
 } from "./schema.js";
 
 const router = Router();
@@ -46,9 +46,8 @@ router.post(
   async (req: Request, res: Response) => {
     const result = await service.create({
       adminId: req.auth!.userId,
-      ...req.body
-    },
-    );
+      ...req.body,
+    });
 
     res.status(201).json(result);
   },
@@ -62,10 +61,9 @@ router.patch(
   async (req: Request, res: Response) => {
     const result = await service.update({
       adminId: req.auth!.userId,
-      ...req.params as unknown as ChampionshipParamsType,
+      ...(req.params as unknown as ChampionshipParamsType),
       ...req.body,
-    }
-    );
+    });
 
     res.status(200).json(result);
   },

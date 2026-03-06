@@ -19,8 +19,7 @@ export const CreateChampionshipBodySchema = z.object({
     Gender,
     `Gender must be one of ${Object.values(Gender).join(", ")}`,
   ),
-  seasonYear: z
-    .coerce
+  seasonYear: z.coerce
     .number("Season year must be a number")
     .min(2020, "Season year must be at least 2020")
     .max(2100, "Season year must be at most 2100"),
@@ -32,12 +31,10 @@ export const UpdateChampionshipBodySchema = z.object({
     .min(3, "Name must be at least 3 characters")
     .max(128, "Name must be at most 128 characters")
     .optional(),
-  gender: z.enum(
-    Gender,
-    `Gender must be one of ${Object.values(Gender).join(", ")}`,
-  ).optional(),
-  seasonYear: z
-    .coerce
+  gender: z
+    .enum(Gender, `Gender must be one of ${Object.values(Gender).join(", ")}`)
+    .optional(),
+  seasonYear: z.coerce
     .number("Season year must be a number")
     .min(2020, "Season year must be at least 2020")
     .max(2100, "Season year must be at most 2100")
@@ -46,10 +43,12 @@ export const UpdateChampionshipBodySchema = z.object({
 
 export type ChampionshipParamsType = z.infer<typeof ChampionshipParamsSchema>;
 
-export type ChampionshipQueryType = z.infer<
-  typeof ChampionshipQuerySchema
+export type ChampionshipQueryType = z.infer<typeof ChampionshipQuerySchema>;
+
+export type CreateChampionshipBodyType = z.infer<
+  typeof CreateChampionshipBodySchema
 >;
 
-export type CreateChampionshipBodyType = z.infer<typeof CreateChampionshipBodySchema>;
-
-export type UpdateChampionshipBodyType = z.infer<typeof UpdateChampionshipBodySchema>;
+export type UpdateChampionshipBodyType = z.infer<
+  typeof UpdateChampionshipBodySchema
+>;

@@ -23,7 +23,7 @@ export async function list({ page, limit }: ChampionshipQueryType) {
   ]);
 
   return {
-    message: "",
+    message: "Championships fetched successfully",
     meta: paginationMeta(total, { page, limit }),
     items,
   };
@@ -39,15 +39,15 @@ export async function getById({ id }: ChampionshipParamsType) {
     throw new AppError("NOT_FOUND", "Championship not found");
   }
 
-  return { nessage: "", championship };
+  return { message: "Championship fetched successfully", championship };
 }
 
-export async function create(
-  { adminId,
-    ...body }: { adminId: string; } & CreateChampionshipBodyType,
-) {
-  const created = await prisma.championship.create({
-    data: { ...body },
+export async function create({
+  adminId,
+  ...data
+}: { adminId: string } & CreateChampionshipBodyType) {
+  const championship = await prisma.championship.create({
+    data,
     select: championshipSelector,
   });
 
@@ -55,21 +55,21 @@ export async function create(
     data: {
       action: "CREATE_CHAMPIONSHIP",
       before: {},
-      after: created,
-      entityId: created.id,
+      after: championship,
+      entityId: championship.id,
       entity: "Championship",
       adminId,
     },
   });
 
-  return created;
+  return { message: "Championship created successfully", championship };
 }
 
-export async function update(
-  { adminId,
-    id,
-    ...body }: { adminId: string } & ChampionshipParamsType & CreateChampionshipBodyType,
-) {
+export async function update({
+  adminId,
+  id,
+  ...data
+}: { adminId: string } & ChampionshipParamsType & UpdateChampionshipBodyType) {
   const existingChampionship = await prisma.championship.findUnique({
     where: { id },
     select: championshipSelector,
@@ -80,10 +80,11 @@ export async function update(
   }
 
   const isGenderChanged =
-    body.gender !== undefined && body.gender !== existingChampionship.gender;
+    data.gender !== undefined && data.gender !== existingChampionship.gender;
 
   const isSeasonYearChanged =
-    body.seasonYear !== undefined && body.seasonYear !== existingChampionship.seasonYear;
+    data.seasonYear !== undefined &&
+    data.seasonYear !== existingChampionship.seasonYear;
 
   if (isGenderChanged || isSeasonYearChanged) {
     const [athleteCount, tournamentCount, leagueCount] = await Promise.all([
@@ -102,7 +103,7 @@ export async function update(
 
   const championship = await prisma.championship.update({
     where: { id },
-    data: body,
+    data,
     select: championshipSelector,
   });
 
@@ -117,5 +118,5 @@ export async function update(
     },
   });
 
-  return championship;
+  return { message: "Championship updated successfully", championship };
 }
