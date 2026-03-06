@@ -2,20 +2,20 @@ import { Router, type Request, type Response } from "express";
 import { validateRequest } from "../../middlewares/validate-request.js";
 import { requireAdmin } from "../../middlewares/auth.js";
 import * as service from "./service.js";
-import { AuditLogQueryParams, type AuditLogQueryParamsType } from "./schema.js";
+import { AuditLogsQuerySchema, type AuditLogsQueryType } from "./schema.js";
 
 const router = Router();
 
 router.get(
-  "/audit-log",
+  "/audit-logs",
   requireAdmin,
-  validateRequest({ query: AuditLogQueryParams }),
+  validateRequest({ query: AuditLogsQuerySchema }),
   async (req: Request, res: Response) => {
-    const data = await service.getAuditLog(
-      req.query as unknown as AuditLogQueryParamsType,
+    const result = await service.getAuditLogs(
+      req.query as unknown as AuditLogsQueryType,
     );
 
-    res.json({ success: true, ...data });
+    res.status(200).json(result);
   },
 );
 

@@ -22,14 +22,14 @@ import type {
 } from "./schema.js";
 
 export async function register(body: RegisterBodyType) {
-  const email = body.email.trim().toLowerCase();
+  const normalizedEmail = body.email.trim().toLowerCase();
 
-  const existing = await prisma.user.findUnique({
-    where: { email },
+  const existingUser = await prisma.user.findUnique({
+    where: { email: normalizedEmail },
     select: userSelector,
   });
 
-  if (existing) {
+  if (existingUser) {
     throw new AppError("CONFLICT", "Email already registered");
   }
 
@@ -37,7 +37,7 @@ export async function register(body: RegisterBodyType) {
 
   const user = await prisma.$transaction(async (tx) => {
     const newUser = await tx.user.create({
-      data: { name: body.name, email, passHash },
+      data: { name: body.name, email: normalizedEmail, passHash },
       select: userSelector,
     });
 
@@ -61,29 +61,33 @@ export async function register(body: RegisterBodyType) {
 }
 
 export async function verifyEmail(body: VerifyEmailBodyType) {
-  const email = body.email.trim().toLowerCase();
+  const normalizedEmail = body.email.trim().toLowerCase();
 
-  const user = await prisma.user.findUnique({
-    where: { email },
+  const existingUser = await prisma.user.findUnique({
+    where: { email: normalizedEmail },
     select: userSelector,
   });
 
-  if (!user) {
+  if (!existingUser) {
     throw new AppError("NOT_FOUND", "User not found");
   }
 
-  if (user.isVerified) {
+  if (existingUser.isVerified) {
     throw new AppError("CONFLICT", "Email already verified");
   }
 
-  const isValid = await verifyOtp(user.id, OtpPurpose.VERIFY_EMAIL, body.code);
+  const isValid = await verifyOtp(
+    existingUser.id,
+    OtpPurpose.VERIFY_EMAIL,
+    body.code,
+  );
 
   if (!isValid) {
     throw new AppError("BAD_REQUEST", "Invalid or expired code");
   }
 
   await prisma.user.update({
-    where: { id: user.id },
+    where: { id: existingUser.id },
     data: { isVerified: true },
   });
 
@@ -91,38 +95,40 @@ export async function verifyEmail(body: VerifyEmailBodyType) {
 }
 
 export async function login(body: LoginBodyType) {
-  const email = body.email.trim().toLowerCase();
+  const normalizedEmail = body.email.trim().toLowerCase();
 
-  const user = await prisma.user.findUnique({
-    where: { email },
+  const existingUser = await prisma.user.findUnique({
+    where: { email: normalizedEmail },
     select: userAuthSelector,
   });
 
-  if (!user) {
+  if (!existingUser) {
     throw new AppError("UNAUTHORIZED", "Invalid credentials");
   }
 
-  const isMatch = await compareSecret(body.password, user.passHash);
+  const isMatch = await compareSecret(body.password, existingUser.passHash);
 
   if (!isMatch) {
     throw new AppError("UNAUTHORIZED", "Invalid credentials");
   }
 
-  if (!user.isVerified) {
+  if (!existingUser.isVerified) {
     throw new AppError(
       "FORBIDDEN",
       "Please verify your email before logging in",
     );
   }
 
-  if (user.isBlocked) {
+  if (existingUser.isBlocked) {
     throw new AppError("FORBIDDEN", "Your account has been suspended");
   }
 
-  const sessionId = await createSession(user.id, body.userAgent);
-  const payload = { sub: user.id, role: user.role, sessionId };
+  const sessionId = await createSession(existingUser.id, body.userAgent);
+
+  const payload = { sub: existingUser.id, role: existingUser.role, sessionId };
+
   const accessToken = signAccessToken(payload);
-  const refreshToken = signRefreshToken({ sub: user.id, sessionId });
+  const refreshToken = signRefreshToken({ sub: existingUser.id, sessionId });
 
   return {
     accessToken,
@@ -133,36 +139,36 @@ export async function login(body: LoginBodyType) {
 export async function refreshTokens(body: RefreshTokenBodyType) {
   const payload = verifyRefreshToken(body.refreshToken);
 
-  const user = await prisma.user.findUnique({
+  const existingUser = await prisma.user.findUnique({
     where: { id: payload.sub },
     select: userSelector,
   });
 
-  if (!user || !user.isVerified || user.isBlocked) {
+  if (!existingUser || !existingUser.isVerified || existingUser.isBlocked) {
     throw new AppError("UNAUTHORIZED", "User not found or blocked");
   }
 
-  const rotated = await revokeSessions({
+  const revokedSessionsCount = await revokeSessions({
     sessionId: payload.sessionId,
     userId: payload.sub,
     onlyActive: true,
   });
 
-  if (rotated !== 1) {
+  if (revokedSessionsCount !== 1) {
     throw new AppError("UNAUTHORIZED", "Session invalid or expired");
   }
 
-  const newSessionId = await createSession(user.id, body.userAgent);
+  const newSessionId = await createSession(existingUser.id, body.userAgent);
 
   const newPayload = {
-    sub: user.id,
-    role: user.role,
+    sub: existingUser.id,
+    role: existingUser.role,
     sessionId: newSessionId,
   };
 
   const accessToken = signAccessToken(newPayload);
   const refreshToken = signRefreshToken({
-    sub: user.id,
+    sub: existingUser.id,
     sessionId: newSessionId,
   });
 
@@ -176,38 +182,38 @@ export async function logout(body: LogoutBodyType) {
 }
 
 export async function forgotPassword(body: ForgotPasswordBodyType) {
-  const email = body.email.trim().toLowerCase();
+  const normalizedEmail = body.email.trim().toLowerCase();
 
-  const user = await prisma.user.findUnique({
-    where: { email },
+  const existingUser = await prisma.user.findUnique({
+    where: { email: normalizedEmail },
     select: userSelector,
   });
 
-  if (!user) {
+  if (!existingUser) {
     return { message: "If that email exists, a reset code has been sent" };
   }
 
-  const code = await createOtp(user.id, OtpPurpose.RESET_PASSWORD);
+  const code = await createOtp(existingUser.id, OtpPurpose.RESET_PASSWORD);
 
-  await sendResetPasswordOtp(user.email, code);
+  await sendResetPasswordOtp(existingUser.email, code);
 
   return { message: "If that email exists, a reset code has been sent" };
 }
 
 export async function resetPassword(body: ResetPasswordBodyType) {
-  const email = body.email.trim().toLowerCase();
+  const normalizedEmail = body.email.trim().toLowerCase();
 
-  const user = await prisma.user.findUnique({
-    where: { email },
+  const existingUser = await prisma.user.findUnique({
+    where: { email: normalizedEmail },
     select: userSelector,
   });
 
-  if (!user) {
+  if (!existingUser) {
     throw new AppError("NOT_FOUND", "User not found");
   }
 
   const isValid = await verifyOtp(
-    user.id,
+    existingUser.id,
     OtpPurpose.RESET_PASSWORD,
     body.code,
   );
@@ -217,11 +223,11 @@ export async function resetPassword(body: ResetPasswordBodyType) {
   }
 
   await prisma.user.update({
-    where: { id: user.id },
+    where: { id: existingUser.id },
     data: { passHash: await hashSecret(body.password) },
   });
 
-  await revokeSessions({ userId: user.id });
+  await revokeSessions({ userId: existingUser.id });
 
   return { message: "Password reset successfully. Please log in again." };
 }

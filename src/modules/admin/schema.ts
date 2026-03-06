@@ -1,21 +1,14 @@
 import { z } from "zod";
+import { paginationSchema } from "../../lib/pagination.js";
 
-export const AuditLogQueryParams = z.object({
-  adminId: z.uuid("adminId must be a valid UUID").optional(),
-  entity: z.string().min(1, "entity cannot be empty").optional(),
-  from: z.coerce.date().optional(),
-  to: z.coerce.date().optional(),
-  page: z.coerce
-    .number()
-    .int("page must be an integer")
-    .positive("page must be greater than 0")
-    .default(1),
-  limit: z.coerce
-    .number()
-    .int("limit must be an integer")
-    .min(1, "limit must be at least 1")
-    .max(100, "limit must be at most 100")
-    .default(20),
+export const AuditLogsQuerySchema = z.object({
+  ...paginationSchema.shape,
+  entity: z
+    .string("Entity must be a string")
+    .min(1, "Entity must be at least 1 character")
+    .optional(),
+  from: z.coerce.date("From must be a date").optional(),
+  to: z.coerce.date("To must be a date").optional(),
 });
 
-export type AuditLogQueryParamsType = z.infer<typeof AuditLogQueryParams>;
+export type AuditLogsQueryType = z.infer<typeof AuditLogsQuerySchema>;

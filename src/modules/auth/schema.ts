@@ -5,15 +5,15 @@ export const RegisterBodySchema = z.object({
     .string("Name must be a string")
     .min(3, "Name must be at least 3 characters")
     .max(128, "Name must be at most 128 characters"),
-  email: z.email("Email must be a valid email"),
+  email: z.email("Email must be a valid email address"),
   password: z
     .string("Password must be a string")
     .min(8, "Password must be at least 8 characters")
-    .max(32, "Password must be at most 32 chars"),
+    .max(32, "Password must be at most 32 characters"),
 });
 
 export const VerifyEmailBodySchema = z.object({
-  email: z.email("Email must be a valid email"),
+  email: z.email("Email must be a valid email address"),
   code: z
     .string("Code must be a string")
     .min(6, "Code must be 6 characters")
@@ -21,7 +21,7 @@ export const VerifyEmailBodySchema = z.object({
 });
 
 export const LoginBodySchema = z.object({
-  email: z.email("Email must be a valid email"),
+  email: z.email("Email must be a valid email address"),
   password: z
     .string("Password must be a string")
     .min(8, "Password must be at least 8 characters")
@@ -43,11 +43,11 @@ export const LogoutBodySchema = z.object({
 });
 
 export const ForgotPasswordBodySchema = z.object({
-  email: z.email("Email must be a valid email"),
+  email: z.email("Email must be a valid email address"),
 });
 
 export const ResetPasswordBodySchema = z.object({
-  email: z.email("Email must be a valid email"),
+  email: z.email("Email must be a valid email address"),
   code: z
     .string("Code must be a string")
     .min(6, "Code must be 6 characters")
