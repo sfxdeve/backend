@@ -3,11 +3,12 @@ import { validateRequest } from "../../middlewares/validate-request.js";
 import { requireAuth, requireAdmin } from "../../middlewares/auth.js";
 import * as service from "./service.js";
 import {
-  CreateMatchBody,
-  MatchParams,
-  UpdateMatchBody,
-  MatchQueryParams,
-  type MatchQueryParamsType,
+  type MatchQueryType,
+  MatchQuerySchema,
+  type MatchParamsType,
+  MatchParamsSchema,
+  CreateMatchBodySchema,
+  UpdateMatchBodySchema,
 } from "./schema.js";
 
 const router = Router();
@@ -15,51 +16,56 @@ const router = Router();
 router.get(
   "/",
   requireAuth,
-  validateRequest({ query: MatchQueryParams }),
+  validateRequest({ query: MatchQuerySchema }),
   async (req: Request, res: Response) => {
-    const data = await service.list(
-      req.query as unknown as MatchQueryParamsType,
+    const result = await service.list(
+      req.query as unknown as MatchQueryType,
     );
 
-    res.json({ success: true, data });
-  },
-);
-
-router.post(
-  "/",
-  requireAdmin,
-  validateRequest({ body: CreateMatchBody }),
-  async (req: Request, res: Response) => {
-    const data = await service.create(req.body);
-
-    res.status(201).json({ success: true, data });
+    res.status(200).json(result);
   },
 );
 
 router.get(
   "/:id",
   requireAuth,
-  validateRequest({ params: MatchParams }),
+  validateRequest({ params: MatchParamsSchema }),
   async (req: Request, res: Response) => {
-    const data = await service.getById(req.params.id as string);
+    const result = await service.getById(
+      req.params as unknown as MatchParamsType,
+    );
 
-    res.json({ success: true, data });
+    res.status(200).json(result);
+  },
+);
+
+router.post(
+  "/",
+  requireAdmin,
+  validateRequest({ body: CreateMatchBodySchema }),
+  async (req: Request, res: Response) => {
+    const result = await service.create({
+      adminId: req.auth!.userId,
+      ...req.body,
+    });
+
+    res.status(201).json(result);
   },
 );
 
 router.patch(
   "/:id",
   requireAdmin,
-  validateRequest({ params: MatchParams }),
-  validateRequest({ body: UpdateMatchBody }),
+  validateRequest({ params: MatchParamsSchema }),
+  validateRequest({ body: UpdateMatchBodySchema }),
   async (req: Request, res: Response) => {
-    const data = await service.update(
-      req.params.id as string,
-      req.body,
-      req.auth!.userId,
-    );
+    const result = await service.update({
+      adminId: req.auth!.userId,
+      ...(req.params as unknown as MatchParamsType),
+      ...req.body,
+    });
 
-    res.json({ success: true, data });
+    res.status(200).json(result);
   },
 );
 

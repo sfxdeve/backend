@@ -1,97 +1,91 @@
 import { z } from "zod";
 import { MatchRound, MatchStatus } from "../../prisma/generated/enums.js";
+import { paginationSchema } from "../../lib/pagination.js";
 
-export const CreateMatchBody = z.object({
-  tournamentId: z.uuid("tournamentId must be a valid UUID"),
-  round: z.enum(
-    MatchRound,
-    `round must be one of ${Object.values(MatchRound).join(", ")}`,
-  ),
-  pairAId: z.uuid("pairAId must be a valid UUID"),
-  pairBId: z.uuid("pairBId must be a valid UUID"),
-  scheduledAt: z.coerce.date().optional(),
-});
-
-export const UpdateMatchBody = z.object({
-  scheduledAt: z.coerce.date().optional(),
-  set1A: z
-    .number()
-    .int("set1A must be an integer")
-    .min(0, "set1A cannot be negative")
-    .optional(),
-  set1B: z
-    .number()
-    .int("set1B must be an integer")
-    .min(0, "set1B cannot be negative")
-    .optional(),
-  set2A: z
-    .number()
-    .int("set2A must be an integer")
-    .min(0, "set2A cannot be negative")
-    .optional(),
-  set2B: z
-    .number()
-    .int("set2B must be an integer")
-    .min(0, "set2B cannot be negative")
-    .optional(),
-  set3A: z
-    .number()
-    .int("set3A must be an integer")
-    .min(0, "set3A cannot be negative")
-    .optional(),
-  set3B: z
-    .number()
-    .int("set3B must be an integer")
-    .min(0, "set3B cannot be negative")
-    .optional(),
-  winnerPairId: z
-    .uuid("winnerPairId must be a valid UUID")
-    .nullable()
-    .optional(),
-  status: z
-    .enum(
-      MatchStatus,
-      `status must be one of ${Object.values(MatchStatus).join(", ")}`,
-    )
-    .optional(),
-  reason: z.string().max(500, "reason must be at most 500 chars").optional(),
-});
-
-export const MatchQueryParams = z.object({
-  tournamentId: z.uuid("tournamentId must be a valid UUID").optional(),
+export const MatchQuerySchema = z.object({
+  ...paginationSchema.shape,
   round: z
     .enum(
       MatchRound,
-      `round must be one of ${Object.values(MatchRound).join(", ")}`,
+      `Round must be one of ${Object.values(MatchRound).join(", ")}`,
     )
     .optional(),
   status: z
     .enum(
       MatchStatus,
-      `status must be one of ${Object.values(MatchStatus).join(", ")}`,
+      `Status must be one of ${Object.values(MatchStatus).join(", ")}`,
     )
     .optional(),
-  page: z.coerce
-    .number()
-    .int("page must be an integer")
-    .positive("page must be greater than 0")
-    .default(1),
-  limit: z.coerce
-    .number()
-    .int("limit must be an integer")
-    .min(1, "limit must be at least 1")
-    .max(100, "limit must be at most 100")
-    .default(20),
+  tournamentId: z.uuid("Tournament ID must be a valid UUID").optional(),
 });
 
-export const MatchParams = z.object({
-  id: z.uuid("id must be a valid UUID"),
+export const MatchParamsSchema = z.object({
+  id: z.uuid("ID must be a valid UUID"),
 });
 
-export type CreateMatchBodyType = z.infer<typeof CreateMatchBody>;
+export const CreateMatchBodySchema = z.object({
+  round: z.enum(
+    MatchRound,
+    `Round must be one of ${Object.values(MatchRound).join(", ")}`,
+  ),
+  scheduledAt: z.coerce.date().optional(),
+  tournamentId: z.uuid("Tournament ID must be a valid UUID"),
+  pairAId: z.uuid("Pair A ID must be a valid UUID"),
+  pairBId: z.uuid("Pair B ID must be a valid UUID"),
+});
 
-export type UpdateMatchBodyType = z.infer<typeof UpdateMatchBody>;
+export const UpdateMatchBodySchema = z.object({
+  set1A: z
+    .number("Set 1 A must be a number")
+    .int("Set 1 A must be an integer")
+    .min(0, "Set 1 A must be at least 0")
+    .optional(),
+  set1B: z
+    .number("Set 1 B must be a number")
+    .int("Set 1 B must be an integer")
+    .min(0, "Set 1 B must be at least 0")
+    .optional(),
+  set2A: z
+    .number("Set 2 A must be a number")
+    .int("Set 2 A must be an integer")
+    .min(0, "Set 2 A must be at least 0")
+    .optional(),
+  set2B: z
+    .number("Set 2 B must be a number")
+    .int("Set 2 B must be an integer")
+    .min(0, "Set 2 B must be at least 0")
+    .optional(),
+  set3A: z
+    .number("Set 3 A must be a number")
+    .int("Set 3 A must be an integer")
+    .min(0, "Set 3 A must be at least 0")
+    .optional(),
+  set3B: z
+    .number("Set 3 B must be a number")
+    .int("Set 3 B must be an integer")
+    .min(0, "Set 3 B must be at least 0")
+    .optional(),
+  status: z
+    .enum(
+      MatchStatus,
+      `Status must be one of ${Object.values(MatchStatus).join(", ")}`,
+    )
+    .optional(),
+  scheduledAt: z.coerce.date().optional(),
+  winnerPairId: z
+    .uuid("Winner pair ID must be a valid UUID")
+    .nullable()
+    .optional(),
+  reason: z
+    .string("Reason must be a string")
+    .max(256, "Reason must be at most 256 characters")
+    .optional(),
+});
 
-export type MatchQueryParamsType = z.infer<typeof MatchQueryParams>;
+export type MatchQueryType = z.infer<typeof MatchQuerySchema>;
 
-export type MatchParamsType = z.infer<typeof MatchParams>;
+export type MatchParamsType = z.infer<typeof MatchParamsSchema>;
+
+export type CreateMatchBodyType = z.infer<typeof CreateMatchBodySchema>;
+
+export type UpdateMatchBodyType = z.infer<typeof UpdateMatchBodySchema>;
