@@ -1,112 +1,101 @@
 import { prisma } from "../../prisma/index.js";
 import { AppError } from "../../lib/errors.js";
-import { paginationMeta } from "../../lib/pagination.js";
+import { paginationMeta, paginationOptions } from "../../lib/pagination.js";
 import { runCascade } from "../../scoring/cascade.js";
 import { logger } from "../../lib/logger.js";
 import { MatchStatus } from "../../prisma/generated/enums.js";
-import { athleteSelector, tournamentSelector } from "../../prisma/selectors.js";
+import {
+  athleteMatchPointsSelector,
+  athleteSelector,
+  matchSelector,
+  tournamentPairSelector,
+  tournamentSelector,
+} from "../../prisma/selectors.js";
 import type {
   CreateMatchBodyType,
   UpdateMatchBodyType,
-  MatchQueryParamsType,
+  MatchQueryType,
+  MatchParamsType,
 } from "./schema.js";
 
 function isTerminalStatus(status: MatchStatus): boolean {
   return status === MatchStatus.COMPLETED || status === MatchStatus.CORRECTED;
 }
 
-function toPopulatedPair(
-  pair: {
-    athleteA: unknown;
-    athleteB: unknown;
-  } & Record<string, unknown>,
-) {
-  const { athleteA, athleteB, ...rest } = pair;
-
-  return {
-    ...rest,
-    athleteAId: athleteA,
-    athleteBId: athleteB,
-  };
-}
-
-export async function list(query: MatchQueryParamsType) {
+export async function list({
+  page,
+  limit,
+  round,
+  status,
+  tournamentId,
+}: MatchQueryType) {
   const where: Record<string, unknown> = {};
 
-  if (query.tournamentId) {
-    where.tournamentId = query.tournamentId;
+  if (round) {
+    where.round = round;
   }
 
-  if (query.round) {
-    where.round = query.round;
+  if (status) {
+    where.status = status;
   }
 
-  if (query.status) {
-    where.status = query.status;
+  if (tournamentId) {
+    where.tournamentId = tournamentId;
   }
 
-  const skip = (query.page - 1) * query.limit;
+  const options = paginationOptions({ page, limit });
 
-  const [matches, total] = await Promise.all([
+  const [items, total] = await Promise.all([
     prisma.match.findMany({
       where,
-      include: {
+      select: {
+        ...matchSelector,
         pairA: {
-          include: {
+          select: {
+            ...tournamentPairSelector,
             athleteA: { select: athleteSelector },
             athleteB: { select: athleteSelector },
           },
         },
         pairB: {
-          include: {
+          select: {
+            ...tournamentPairSelector,
             athleteA: { select: athleteSelector },
             athleteB: { select: athleteSelector },
           },
         },
       },
       orderBy: { scheduledAt: "asc" },
-      skip,
-      take: query.limit,
+      skip: options.skip,
+      take: options.take,
     }),
     prisma.match.count({ where }),
   ]);
 
   return {
-    items: matches.map((match) => {
-      const { pairA, pairB, ...rest } = match;
-
-      return {
-        ...rest,
-        pairAId: toPopulatedPair(pairA),
-        pairBId: toPopulatedPair(pairB),
-      };
-    }),
-    meta: paginationMeta(total, { page: query.page, limit: query.limit }),
+    message: "Matches fetched successfully",
+    meta: paginationMeta(total, { page, limit }),
+    items,
   };
 }
 
-export async function getById(id: string) {
+export async function getById({ id }: MatchParamsType) {
   const match = await prisma.match.findUnique({
     where: { id },
-    include: {
+    select: {
+      ...matchSelector,
       pairA: {
-        include: {
-          athleteA: {
-            select: athleteSelector,
-          },
-          athleteB: {
-            select: athleteSelector,
-          },
+        select: {
+          ...tournamentPairSelector,
+          athleteA: { select: athleteSelector },
+          athleteB: { select: athleteSelector },
         },
       },
       pairB: {
-        include: {
-          athleteA: {
-            select: athleteSelector,
-          },
-          athleteB: {
-            select: athleteSelector,
-          },
+        select: {
+          ...tournamentPairSelector,
+          athleteA: { select: athleteSelector },
+          athleteB: { select: athleteSelector },
         },
       },
     },
@@ -116,32 +105,29 @@ export async function getById(id: string) {
     throw new AppError("NOT_FOUND", "Match not found");
   }
 
-  const points = await prisma.athleteMatchPoints.findMany({
+  const athleteMatchPoints = await prisma.athleteMatchPoints.findMany({
     where: { matchId: id },
-    include: {
+    select: {
+      ...athleteMatchPointsSelector,
       athlete: { select: athleteSelector },
     },
   });
 
-  const { pairA, pairB, ...rest } = match;
-
   return {
-    ...rest,
-    pairAId: toPopulatedPair(pairA),
-    pairBId: toPopulatedPair(pairB),
-    athletePoints: points.map((point) => {
-      const { athlete, ...pointRest } = point;
-      return {
-        ...pointRest,
-        athleteId: athlete,
-      };
-    }),
+    message: "Match fetched successfully",
+    match: {
+      ...match,
+      athletePoints: athleteMatchPoints,
+    },
   };
 }
 
-export async function create(body: CreateMatchBodyType) {
+export async function create({
+  adminId,
+  ...data
+}: { adminId: string } & CreateMatchBodyType) {
   const tournament = await prisma.tournament.findUnique({
-    where: { id: body.tournamentId },
+    where: { id: data.tournamentId },
     select: tournamentSelector,
   });
 
@@ -149,13 +135,16 @@ export async function create(body: CreateMatchBodyType) {
     throw new AppError("NOT_FOUND", "Tournament not found");
   }
 
-  if (body.pairAId === body.pairBId) {
-    throw new AppError("BAD_REQUEST", "pairAId and pairBId must be different");
+  if (data.pairAId === data.pairBId) {
+    throw new AppError(
+      "BAD_REQUEST",
+      "Pair A and Pair B must be different pairs",
+    );
   }
 
   const [pairA, pairB] = await Promise.all([
-    prisma.tournamentPair.findUnique({ where: { id: body.pairAId } }),
-    prisma.tournamentPair.findUnique({ where: { id: body.pairBId } }),
+    prisma.tournamentPair.findUnique({ where: { id: data.pairAId } }),
+    prisma.tournamentPair.findUnique({ where: { id: data.pairBId } }),
   ]);
 
   if (!pairA || !pairB) {
@@ -176,23 +165,55 @@ export async function create(body: CreateMatchBodyType) {
     );
   }
 
-  return prisma.match.create({ data: body });
+  const match = await prisma.match.create({
+    data,
+    select: {
+      ...matchSelector,
+      pairA: {
+        select: {
+          ...tournamentPairSelector,
+          athleteA: { select: athleteSelector },
+          athleteB: { select: athleteSelector },
+        },
+      },
+      pairB: {
+        select: {
+          ...tournamentPairSelector,
+          athleteA: { select: athleteSelector },
+          athleteB: { select: athleteSelector },
+        },
+      },
+    },
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      action: "CREATE_MATCH",
+      before: {},
+      after: match,
+      entityId: match.id,
+      entity: "Match",
+      adminId,
+    },
+  });
+
+  return { message: "Match created successfully", match };
 }
 
-export async function update(
-  id: string,
-  body: UpdateMatchBodyType,
-  adminId: string,
-) {
-  const before = await prisma.match.findUnique({ where: { id } });
+export async function update({
+  adminId,
+  id,
+  ...body
+}: { adminId: string } & MatchParamsType & UpdateMatchBodyType) {
+  const existingMatch = await prisma.match.findUnique({ where: { id } });
 
-  if (!before) {
+  if (!existingMatch) {
     throw new AppError("NOT_FOUND", "Match not found");
   }
 
   const { reason, ...updateFields } = body;
 
-  const nextStatus = updateFields.status ?? before.status;
+  const nextStatus = updateFields.status ?? existingMatch.status;
   const hasWinnerPairUpdate = Object.prototype.hasOwnProperty.call(
     updateFields,
     "winnerPairId",
@@ -200,9 +221,12 @@ export async function update(
 
   const nextWinnerPairId = hasWinnerPairUpdate
     ? (updateFields.winnerPairId ?? null)
-    : before.winnerPairId;
+    : existingMatch.winnerPairId;
 
-  const allowedWinnerIds = new Set([before.pairAId, before.pairBId]);
+  const allowedWinnerIds = new Set([
+    existingMatch.pairAId,
+    existingMatch.pairBId,
+  ]);
 
   if (nextWinnerPairId && !allowedWinnerIds.has(nextWinnerPairId)) {
     throw new AppError(
@@ -218,7 +242,7 @@ export async function update(
     );
   }
 
-  const wasTerminal = isTerminalStatus(before.status);
+  const wasTerminal = isTerminalStatus(existingMatch.status);
   const willBeTerminal = isTerminalStatus(nextStatus);
 
   const { winnerPairId: _winnerPairId, ...restUpdateFields } = updateFields;
@@ -226,27 +250,28 @@ export async function update(
 
   if (hasWinnerPairUpdate) {
     data.winnerPairId = updateFields.winnerPairId ?? null;
-  } else if (wasTerminal && !willBeTerminal && before.winnerPairId) {
+  } else if (wasTerminal && !willBeTerminal && existingMatch.winnerPairId) {
     data.winnerPairId = null;
   }
 
-  const doc =
+  const updatedMatch =
     Object.keys(data).length > 0
       ? await prisma.match.update({
           where: { id },
           data,
+          select: matchSelector,
         })
-      : before;
+      : existingMatch;
 
-  await prisma.adminAuditLog.create({
+  await prisma.auditLog.create({
     data: {
-      adminId,
       action: "UPDATE_MATCH",
-      entity: "Match",
+      before: existingMatch,
+      after: updatedMatch,
       entityId: id,
-      before,
-      after: doc,
+      entity: "Match",
       reason,
+      adminId,
     },
   });
 
@@ -264,5 +289,5 @@ export async function update(
     }
   }
 
-  return doc;
+  return { message: "Match updated successfully", match: updatedMatch };
 }

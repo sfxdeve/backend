@@ -18,9 +18,7 @@ router.get(
   requireAuth,
   validateRequest({ query: MatchQuerySchema }),
   async (req: Request, res: Response) => {
-    const result = await service.list(
-      req.query as unknown as MatchQueryType,
-    );
+    const result = await service.list(req.query as unknown as MatchQueryType);
 
     res.status(200).json(result);
   },
