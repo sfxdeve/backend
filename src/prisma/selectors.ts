@@ -15,7 +15,6 @@ import type {
   OtpSelect,
   RosterEntrySelect,
   SessionSelect,
-  TournamentPairSelect,
   TournamentSelect,
   UserSelect,
   WalletSelect,
@@ -81,6 +80,8 @@ export const athleteSelector = {
   firstName: true,
   lastName: true,
   gender: true,
+  rank: true,
+  cost: true,
   createdAt: true,
   updatedAt: true,
 } satisfies AthleteSelect;
@@ -95,24 +96,17 @@ export const tournamentSelector = {
   updatedAt: true,
 } satisfies TournamentSelect;
 
-export const tournamentPairSelector = {
-  id: true,
-  entryStatus: true,
-  createdAt: true,
-  updatedAt: true,
-} satisfies TournamentPairSelect;
-
 export const matchSelector = {
   id: true,
+  round: true,
+  status: true,
+  scheduledAt: true,
   set1A: true,
   set1B: true,
   set2A: true,
   set2B: true,
   set3A: true,
   set3B: true,
-  round: true,
-  status: true,
-  scheduledAt: true,
   createdAt: true,
   updatedAt: true,
 } satisfies MatchSelect;
@@ -120,15 +114,26 @@ export const matchSelector = {
 export const leagueSelector = {
   id: true,
   name: true,
+  type: true,
+  joinCode: true,
+  rankingMode: true,
+  isOpen: true,
   rosterSize: true,
   startersSize: true,
-  status: true,
+  budgetPerTeam: true,
+  entryFeeCredits: true,
+  prize1st: true,
+  prize2nd: true,
+  prize3rd: true,
+  maxMembers: true,
+  isMarketEnabled: true,
   createdAt: true,
   updatedAt: true,
 } satisfies LeagueSelect;
 
 export const leagueMembershipSelector = {
   id: true,
+  feePaid: true,
   createdAt: true,
   updatedAt: true,
 } satisfies LeagueMembershipSelect;
@@ -136,6 +141,7 @@ export const leagueMembershipSelector = {
 export const fantasyTeamSelector = {
   id: true,
   name: true,
+  fantacoinsRemaining: true,
   totalPoints: true,
   createdAt: true,
   updatedAt: true,
@@ -143,6 +149,7 @@ export const fantasyTeamSelector = {
 
 export const rosterSelector = {
   id: true,
+  purchasePrice: true,
   acquiredAt: true,
   createdAt: true,
   updatedAt: true,
@@ -196,7 +203,7 @@ export const creditTransactionSelector = {
   type: true,
   source: true,
   amount: true,
-  balanceAfter: true,
+  newBalance: true,
   meta: true,
   createdAt: true,
   updatedAt: true,
@@ -212,24 +219,23 @@ export const athleteMatchPointsSelector = {
 } satisfies AthleteMatchPointsSelect;
 
 export const modelSelectors = {
-  User: userSelector,
-  Session: sessionSelector,
-  Otp: otpSelector,
   AdminAuditLog: auditLogSelector,
-  Championship: championshipSelector,
   Athlete: athleteSelector,
-  Tournament: tournamentSelector,
-  TournamentPair: tournamentPairSelector,
-  Match: matchSelector,
-  League: leagueSelector,
-  LeagueMembership: leagueMembershipSelector,
-  FantasyTeam: fantasyTeamSelector,
-  RosterEntry: rosterSelector,
-  Lineup: lineupSelector,
-  LineupSlot: lineupSlotSelector,
-  GameweekStanding: gameweekStandingSelector,
-  Wallet: walletSelector,
+  AthleteMatchPoints: athleteMatchPointsSelector,
+  Championship: championshipSelector,
   CreditPack: creditPackSelector,
   CreditTransaction: creditTransactionSelector,
-  AthleteMatchPoints: athleteMatchPointsSelector,
+  FantasyTeam: fantasyTeamSelector,
+  GameweekStanding: gameweekStandingSelector,
+  League: leagueSelector,
+  LeagueMembership: leagueMembershipSelector,
+  Lineup: lineupSelector,
+  LineupSlot: lineupSlotSelector,
+  Match: matchSelector,
+  Otp: otpSelector,
+  RosterEntry: rosterSelector,
+  Session: sessionSelector,
+  Tournament: tournamentSelector,
+  User: userSelector,
+  Wallet: walletSelector,
 } as const;

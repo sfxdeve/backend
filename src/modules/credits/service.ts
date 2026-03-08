@@ -83,7 +83,7 @@ export async function createCheckout({
       type: CreditTransactionType.PURCHASE,
       source: CreditTransactionSource.STRIPE,
       amount: pack.credits,
-      balanceAfter: wallet.balance + pack.credits,
+      newBalance: wallet.balance + pack.credits,
       meta: { creditPackId: pack.id, status: "pending" },
     },
     select: creditTransactionSelector,
@@ -206,7 +206,7 @@ export async function handleWebhook(rawBody: Buffer, signature: string) {
       await tx.creditTransaction.update({
         where: { id: pendingTransaction.id },
         data: {
-          balanceAfter: newBalance,
+          newBalance,
           meta: {
             ...asObject(pendingTransaction.meta),
             status: "fulfilled",
@@ -372,7 +372,7 @@ export async function grantCredits({
         type: CreditTransactionType.BONUS,
         source: CreditTransactionSource.ADMIN,
         amount: body.amount,
-        balanceAfter: updatedWallet.balance,
+        newBalance: updatedWallet.balance,
       },
     });
 

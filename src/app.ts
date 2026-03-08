@@ -14,11 +14,6 @@ import {
 import { notFoundHandler, errorHandler } from "./middlewares/error-handler.js";
 import authRouter from "./modules/auth/router.js";
 import championshipsRouter from "./modules/championships/router.js";
-import athletesRouter from "./modules/athletes/router.js";
-import tournamentsRouter from "./modules/tournaments/router.js";
-import matchesRouter from "./modules/matches/router.js";
-import leaguesRouter from "./modules/leagues/router.js";
-import fantasyTeamsRouter from "./modules/fantasy-teams/router.js";
 import creditsRouter from "./modules/credits/router.js";
 import auditLogsRouter from "./modules/audit-logs/router.js";
 
@@ -87,11 +82,6 @@ export async function bootstrap(): Promise<{
 
   app.use(`${prefix}/auth`, authRateLimiter, authRouter);
   app.use(`${prefix}/championships`, championshipsRouter);
-  app.use(`${prefix}/athletes`, athletesRouter);
-  app.use(`${prefix}/tournaments`, tournamentsRouter);
-  app.use(`${prefix}/matches`, matchesRouter);
-  app.use(`${prefix}/leagues`, leaguesRouter);
-  app.use(`${prefix}/leagues/:id`, fantasyTeamsRouter);
   app.use(`${prefix}/credits`, creditsRouter);
   app.use(`${prefix}/admin`, auditLogsRouter);
 
