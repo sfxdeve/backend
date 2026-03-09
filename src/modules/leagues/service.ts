@@ -24,6 +24,31 @@ function generateJoinCode(): string {
   return crypto.randomBytes(4).toString("hex").toUpperCase();
 }
 
+export async function listMine({
+  userId,
+  page,
+  limit,
+}: { userId: string } & LeagueQueryType) {
+  const options = paginationOptions({ page, limit });
+
+  const [items, total] = await Promise.all([
+    prisma.league.findMany({
+      where: { memberships: { some: { userId } } },
+      select: leagueSelector,
+      orderBy: { createdAt: "desc" },
+      skip: options.skip,
+      take: options.take,
+    }),
+    prisma.league.count({ where: { memberships: { some: { userId } } } }),
+  ]);
+
+  return {
+    message: "My leagues fetched successfully",
+    meta: paginationMeta(total, { page, limit }),
+    items,
+  };
+}
+
 export async function list({ page, limit }: LeagueQueryType) {
   const options = paginationOptions({ page, limit });
 
@@ -45,7 +70,10 @@ export async function list({ page, limit }: LeagueQueryType) {
   };
 }
 
-export async function getById({ id }: LeagueParamsType) {
+export async function getById({
+  userId,
+  id,
+}: { userId: string } & LeagueParamsType) {
   const league = await prisma.league.findUnique({
     where: { id },
     select: leagueSelector,
@@ -53,6 +81,17 @@ export async function getById({ id }: LeagueParamsType) {
 
   if (!league) {
     throw new AppError("NOT_FOUND", "League not found");
+  }
+
+  // Private leagues are invisible to non-members
+  if (league.type === "PRIVATE") {
+    const membership = await prisma.leagueMembership.findUnique({
+      where: { userId_leagueId: { userId, leagueId: id } },
+      select: { id: true },
+    });
+    if (!membership) {
+      throw new AppError("NOT_FOUND", "League not found");
+    }
   }
 
   return { message: "League fetched successfully", league };
@@ -194,6 +233,24 @@ export async function join({
 
   if (!league.isOpen) {
     throw new AppError("BAD_REQUEST", "This league is no longer open");
+  }
+
+  // H2H leagues cannot be joined once any tournament has reached LOCKED or later.
+  // The schedule is generated once at league start and must not be rebuilt mid-season.
+  if (league.rankingMode === "HEAD_TO_HEAD") {
+    const startedTournament = await prisma.tournament.findFirst({
+      where: {
+        championship: { leagues: { some: { id: leagueId } } },
+        status: { in: ["LOCKED", "ONGOING", "COMPLETED"] },
+      },
+      select: { id: true },
+    });
+    if (startedTournament) {
+      throw new AppError(
+        "BAD_REQUEST",
+        "Cannot join a Head-to-Head league after the season has started",
+      );
+    }
   }
 
   // Private league requires join code

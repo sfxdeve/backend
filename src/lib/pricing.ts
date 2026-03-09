@@ -23,7 +23,7 @@ const TOP20: Record<number, number> = {
 };
 
 export function computeAthletePrice(rank: number): number {
-  if (rank >= 85) return 1;
+  if (rank <= 0 || rank >= 85) return 1;
   if (rank <= 20) return TOP20[rank]!;
   if (rank <= 50) return 77 - Math.floor((rank - 21) / 2);
   if (rank <= 70) return 62 - 2 * (rank - 51);

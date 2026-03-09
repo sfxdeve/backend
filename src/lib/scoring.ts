@@ -357,17 +357,19 @@ async function updateH2HStandings(
     }
   }
 
-  // Cumulative league points from previous weeks
+  // Cumulative league points from previous weeks.
+  // cumulativePoints stores the running total per record, so use _max (the latest
+  // week's running total) rather than _sum which would double-count.
   const previousStandings = await prisma.gameweekStanding.groupBy({
     by: ["fantasyTeamId"],
     where: { leagueId, tournamentId: { not: tournamentId } },
-    _sum: { cumulativePoints: true },
+    _max: { cumulativePoints: true },
   });
 
   const previousLeaguePts = new Map(
     previousStandings.map((s) => [
       s.fantasyTeamId,
-      s._sum.cumulativePoints ?? 0,
+      s._max.cumulativePoints ?? 0,
     ]),
   );
 

@@ -28,13 +28,27 @@ router.get(
 );
 
 router.get(
+  "/mine",
+  requireAuth,
+  validateRequest({ query: LeagueQuerySchema }),
+  async (req: Request, res: Response) => {
+    const result = await service.listMine({
+      userId: req.auth!.userId,
+      ...(req.validated!.query as LeagueQueryType),
+    });
+    res.status(200).json(result);
+  },
+);
+
+router.get(
   "/:id",
   requireAuth,
   validateRequest({ params: LeagueParamsSchema }),
   async (req: Request, res: Response) => {
-    const result = await service.getById(
-      req.validated!.params as LeagueParamsType,
-    );
+    const result = await service.getById({
+      userId: req.auth!.userId,
+      ...(req.validated!.params as LeagueParamsType),
+    });
     res.status(200).json(result);
   },
 );
