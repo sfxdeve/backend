@@ -46,7 +46,7 @@ export function validateRequest(schemas: ValidationSchemas) {
       }
 
       if (schemas.body) {
-        const parsed = schemas.body.parse(req.validated!.body);
+        const parsed = schemas.body.parse(req.body);
 
         (req as any).validated = {
           ...(req as any).validated,
