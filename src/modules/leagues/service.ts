@@ -1,286 +1,294 @@
 import crypto from "node:crypto";
-import {
-  League,
-  LeagueMembership,
-  FantasyTeam,
-  GameweekStanding,
-} from "../../models/Fantasy.js";
-import { Championship } from "../../models/RealWorld.js";
-import { Wallet, CreditTransaction } from "../../models/Credits.js";
+import { prisma } from "../../prisma/index.js";
 import { AppError } from "../../lib/errors.js";
-import { paginationMeta } from "../../lib/pagination.js";
-import { withMongoTransaction } from "../../lib/tx.js";
+import { paginationMeta, paginationOptions } from "../../lib/pagination.js";
+import {
+  leagueSelector,
+  leagueMembershipSelector,
+  fantasyTeamSelector,
+} from "../../prisma/selectors.js";
 import {
   CreditTransactionType,
   CreditTransactionSource,
-  LeagueType,
-  LeagueStatus,
-  RankingMode,
-} from "../../models/enums.js";
+} from "../../prisma/generated/enums.js";
+import { generateH2HSchedule } from "../../lib/h2h.js";
 import type {
+  LeagueQueryType,
+  LeagueParamsType,
   CreateLeagueBodyType,
+  UpdateLeagueBodyType,
   JoinLeagueBodyType,
-  LeagueQueryParamsType,
-  StandingsQueryParamsType,
 } from "./schema.js";
 
-export async function list(
-  query: LeagueQueryParamsType,
-  userId: string,
-  isAdmin: boolean,
-) {
-  const skip = (query.page - 1) * query.limit;
+function generateJoinCode(): string {
+  return crypto.randomBytes(4).toString("hex").toUpperCase();
+}
 
-  const filter: Record<string, unknown> = {};
-
-  if (query.type) {
-    filter.type = query.type;
-  }
-
-  if (query.status) {
-    filter.status = query.status;
-  }
-
-  if (query.championshipId) {
-    filter.championshipId = query.championshipId;
-  }
-
-  if (!isAdmin) {
-    const myMemberships = await LeagueMembership.find({ userId }).distinct(
-      "leagueId",
-    );
-    filter.$or = [{ type: LeagueType.PUBLIC }, { _id: { $in: myMemberships } }];
-  }
+export async function list({ page, limit }: LeagueQueryType) {
+  const options = paginationOptions({ page, limit });
 
   const [items, total] = await Promise.all([
-    League.find(filter)
-      .populate("championshipId", "name gender seasonYear")
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(query.limit)
-      .lean(),
-    League.countDocuments(filter),
+    prisma.league.findMany({
+      where: { type: "PUBLIC", isOpen: true },
+      select: leagueSelector,
+      orderBy: { createdAt: "desc" },
+      skip: options.skip,
+      take: options.take,
+    }),
+    prisma.league.count({ where: { type: "PUBLIC", isOpen: true } }),
   ]);
-
-  const leagueIds = items.map((l) => l._id);
-
-  const memberCounts = await LeagueMembership.aggregate([
-    { $match: { leagueId: { $in: leagueIds } } },
-    { $group: { _id: "$leagueId", count: { $sum: 1 } } },
-  ]);
-
-  const countMap = new Map(memberCounts.map((m) => [String(m._id), m.count]));
-
-  const enriched = items.map((l) => ({
-    ...l,
-    memberCount: countMap.get(String(l._id)) ?? 0,
-  }));
 
   return {
-    items: enriched,
-    meta: paginationMeta(total, { page: query.page, limit: query.limit }),
+    message: "Leagues fetched successfully",
+    meta: paginationMeta(total, { page, limit }),
+    items,
   };
 }
 
-export async function getById(id: string, userId: string, isAdmin: boolean) {
-  const league = await League.findById(id)
-    .populate("championshipId", "name gender seasonYear")
-    .lean();
+export async function getById({ id }: LeagueParamsType) {
+  const league = await prisma.league.findUnique({
+    where: { id },
+    select: leagueSelector,
+  });
 
   if (!league) {
     throw new AppError("NOT_FOUND", "League not found");
   }
 
-  if (league.type === LeagueType.PRIVATE && !isAdmin) {
-    const membership = await LeagueMembership.findOne({
-      leagueId: id,
-      userId,
-    }).lean();
-
-    if (!membership) {
-      throw new AppError("NOT_FOUND", "League not found");
-    }
-  }
-
-  const memberCount = await LeagueMembership.countDocuments({ leagueId: id });
-
-  return { ...league, memberCount };
+  return { message: "League fetched successfully", league };
 }
 
-export async function create(body: CreateLeagueBodyType, adminId: string) {
-  const championship = await Championship.findById(body.championshipId).lean();
+export async function create({
+  userId,
+  isAdmin,
+  ...data
+}: { userId: string; isAdmin: boolean } & CreateLeagueBodyType) {
+  // Validate type/role permissions
+  if (data.type === "PUBLIC" && !isAdmin) {
+    throw new AppError("FORBIDDEN", "Only admins can create public leagues");
+  }
+
+  // PUBLIC leagues must use OVERALL
+  const rankingMode =
+    data.type === "PUBLIC"
+      ? "OVERALL"
+      : ((data as { rankingMode?: string }).rankingMode ?? "OVERALL");
+
+  // Ensure championship exists
+  const championship = await prisma.championship.findUnique({
+    where: { id: data.championshipId },
+    select: { id: true },
+  });
 
   if (!championship) {
     throw new AppError("NOT_FOUND", "Championship not found");
   }
 
-  const leagueData: Record<string, unknown> = {
-    ...body,
-    createdBy: adminId,
-    isOfficial: true,
-  };
-
-  if (body.type === LeagueType.PRIVATE) {
-    leagueData.inviteCode = crypto.randomBytes(6).toString("hex").toUpperCase();
+  // Generate joinCode for private leagues; null for public
+  let joinCode: string | null = null;
+  if (data.type === "PRIVATE") {
+    // Generate a unique code (retry on collision)
+    let attempts = 0;
+    while (attempts < 5) {
+      const candidate = generateJoinCode();
+      const existing = await prisma.league.findUnique({
+        where: { joinCode: candidate },
+        select: { id: true },
+      });
+      if (!existing) {
+        joinCode = candidate;
+        break;
+      }
+      attempts++;
+    }
+    if (!joinCode) {
+      throw new AppError(
+        "INTERNAL_SERVER_ERROR",
+        "Failed to generate unique join code",
+      );
+    }
   }
 
-  return League.create(leagueData);
+  const { type, ...rest } = data as CreateLeagueBodyType & {
+    rankingMode?: string;
+  };
+  const leagueData = {
+    ...rest,
+    type,
+    rankingMode,
+    joinCode,
+    isOpen: true,
+    createdById: userId,
+  };
+
+  const league = await prisma.league.create({
+    // @ts-expect-error — dynamic spread; Prisma will validate fields
+    data: leagueData,
+    select: leagueSelector,
+  });
+
+  if (isAdmin) {
+    await prisma.auditLog.create({
+      data: {
+        action: "CREATE_LEAGUE",
+        entity: "League",
+        entityId: league.id,
+        before: {},
+        after: league,
+        adminId: userId,
+      },
+    });
+  }
+
+  return { message: "League created successfully", league };
 }
 
-export async function join(
-  leagueId: string,
-  userId: string,
-  body: JoinLeagueBodyType,
-) {
-  const league = await League.findById(leagueId).lean();
+export async function update({
+  adminId,
+  id,
+  ...data
+}: { adminId: string } & LeagueParamsType & UpdateLeagueBodyType) {
+  const existing = await prisma.league.findUnique({
+    where: { id },
+    select: leagueSelector,
+  });
+
+  if (!existing) {
+    throw new AppError("NOT_FOUND", "League not found");
+  }
+
+  const league = await prisma.league.update({
+    where: { id },
+    data,
+    select: leagueSelector,
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      action: "UPDATE_LEAGUE",
+      entity: "League",
+      entityId: id,
+      before: existing,
+      after: league,
+      adminId,
+    },
+  });
+
+  return { message: "League updated successfully", league };
+}
+
+export async function join({
+  userId,
+  id: leagueId,
+  joinCode,
+  teamName,
+}: { userId: string } & LeagueParamsType & JoinLeagueBodyType) {
+  const league = await prisma.league.findUnique({
+    where: { id: leagueId },
+    select: leagueSelector,
+  });
 
   if (!league) {
     throw new AppError("NOT_FOUND", "League not found");
   }
 
-  if (league.status !== LeagueStatus.OPEN) {
-    throw new AppError("CONFLICT", "This league is not open for enrollment");
+  if (!league.isOpen) {
+    throw new AppError("BAD_REQUEST", "This league is no longer open");
   }
 
-  if (league.type === LeagueType.PRIVATE) {
-    if (!body.inviteCode || body.inviteCode !== league.inviteCode) {
-      throw new AppError("FORBIDDEN", "Invalid invite code");
+  // Private league requires join code
+  if (league.type === "PRIVATE") {
+    if (!joinCode || joinCode !== league.joinCode) {
+      throw new AppError("FORBIDDEN", "Invalid join code");
     }
   }
 
-  const existing = await LeagueMembership.findOne({ leagueId, userId }).lean();
-
-  if (existing) {
-    throw new AppError("CONFLICT", "Already enrolled in this league");
+  // Check max members
+  if (league.maxMembers !== null) {
+    const memberCount = await prisma.leagueMembership.count({
+      where: { leagueId },
+    });
+    if (memberCount >= league.maxMembers) {
+      throw new AppError("BAD_REQUEST", "League is full");
+    }
   }
 
-  try {
-    if (league.entryFee && league.entryFee > 0) {
-      const wallet = await Wallet.findOne({ userId }).lean();
+  // Check already joined
+  const existingMembership = await prisma.leagueMembership.findUnique({
+    where: { userId_leagueId: { userId, leagueId } },
+    select: { id: true },
+  });
+
+  if (existingMembership) {
+    throw new AppError("CONFLICT", "Already a member of this league");
+  }
+
+  // Handle entry fee
+  const entryFee = league.entryFeeCredits ?? 0;
+  let feePaid = entryFee === 0;
+
+  const result = await prisma.$transaction(async (tx) => {
+    if (entryFee > 0) {
+      const wallet = await tx.wallet.findUnique({ where: { userId } });
 
       if (!wallet) {
         throw new AppError("NOT_FOUND", "Wallet not found");
       }
 
-      const entryFee = league.entryFee;
-
-      await withMongoTransaction(async (session) => {
-        const updatedWallet = await Wallet.findOneAndUpdate(
-          { _id: wallet._id, balance: { $gte: entryFee } },
-          {
-            $inc: { balance: -entryFee, totalSpent: entryFee },
-          },
-          { new: true, session },
+      if (wallet.balance < entryFee) {
+        throw new AppError(
+          "BAD_REQUEST",
+          "Insufficient credits. Please purchase more credits to join this league.",
         );
+      }
 
-        if (!updatedWallet) {
-          throw new AppError("UNPROCESSABLE", "Insufficient credits");
-        }
+      const newBalance = wallet.balance - entryFee;
 
-        await CreditTransaction.create(
-          [
-            {
-              walletId: wallet._id,
-              type: CreditTransactionType.SPEND,
-              source: CreditTransactionSource.SYSTEM,
-              amount: -entryFee,
-              balanceAfter: updatedWallet.balance,
-              meta: { leagueId: String(leagueId) },
-            },
-          ],
-          { session },
-        );
-
-        await LeagueMembership.create(
-          [{ leagueId, userId, enrolledAt: new Date() }],
-          { session },
-        );
-
-        await FantasyTeam.create(
-          [
-            {
-              leagueId,
-              userId,
-              name: body.teamName,
-              fantacoinsRemaining: league.initialBudget,
-              totalPoints: 0,
-            },
-          ],
-          { session },
-        );
+      await tx.wallet.update({
+        where: { id: wallet.id },
+        data: { balance: { decrement: entryFee } },
       });
-    } else {
-      await LeagueMembership.create({
-        leagueId,
+
+      await tx.creditTransaction.create({
+        data: {
+          walletId: wallet.id,
+          type: CreditTransactionType.SPEND,
+          source: CreditTransactionSource.SYSTEM,
+          amount: entryFee,
+          newBalance,
+          meta: { leagueId, purpose: "entry_fee" },
+        },
+      });
+
+      feePaid = true;
+    }
+
+    const membership = await tx.leagueMembership.create({
+      data: { userId, leagueId, feePaid },
+      select: leagueMembershipSelector,
+    });
+
+    const fantasyTeam = await tx.fantasyTeam.create({
+      data: {
         userId,
-        enrolledAt: new Date(),
-      });
-
-      await FantasyTeam.create({
         leagueId,
-        userId,
-        name: body.teamName,
-        fantacoinsRemaining: league.initialBudget,
-        totalPoints: 0,
-      });
-    }
-  } catch (err) {
-    if ((err as { code?: number }).code === 11000) {
-      throw new AppError("CONFLICT", "Already enrolled in this league");
-    }
+        name: teamName,
+        fantacoinsRemaining: league.budgetPerTeam,
+      },
+      select: fantasyTeamSelector,
+    });
 
-    throw err;
+    return { membership, fantasyTeam };
+  });
+
+  // If H2H league, regenerate schedule now that team count changed
+  if (league.rankingMode === "HEAD_TO_HEAD") {
+    await generateH2HSchedule(leagueId);
   }
 
-  return { message: "Successfully joined league" };
-}
-
-export async function getStandings(
-  leagueId: string,
-  userId: string,
-  isAdmin: boolean,
-  query: StandingsQueryParamsType,
-) {
-  const league = await League.findById(leagueId).lean();
-
-  if (!league) {
-    throw new AppError("NOT_FOUND", "League not found");
-  }
-
-  if (league.type === LeagueType.PRIVATE && !isAdmin) {
-    const membership = await LeagueMembership.findOne({
-      leagueId,
-      userId,
-    }).lean();
-
-    if (!membership) {
-      throw new AppError("NOT_FOUND", "League not found");
-    }
-  }
-
-  if (query.tournamentId) {
-    const standings = await GameweekStanding.find({
-      leagueId,
-      tournamentId: query.tournamentId,
-    })
-      .populate("fantasyTeamId", "name userId")
-      .sort({ rank: 1 })
-      .lean();
-
-    return standings;
-  }
-
-  if (league.rankingMode === RankingMode.HEAD_TO_HEAD) {
-    throw new AppError(
-      "NOT_IMPLEMENTED",
-      "Overall standings for HEAD_TO_HEAD leagues are not yet supported. Use ?tournamentId= to view per-gameweek standings.",
-    );
-  }
-
-  const teams = await FantasyTeam.find({ leagueId })
-    .populate("userId", "name")
-    .sort({ totalPoints: -1 })
-    .lean();
-
-  return teams.map((t, i) => ({ ...t, rank: i + 1 }));
+  return {
+    message: "Joined league successfully",
+    membership: result.membership,
+    fantasyTeam: result.fantasyTeam,
+  };
 }

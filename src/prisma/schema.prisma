@@ -1,0 +1,457 @@
+generator client {
+  provider = "prisma-client"
+  output   = "./generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── User & Auth ──────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum OtpPurpose {
+  VERIFY_EMAIL
+  RESET_PASSWORD
+}
+
+model User {
+  id         String   @id @default(uuid())
+  email      String   @unique
+  passHash   String
+  name       String
+  role       Role     @default(USER)
+  isVerified Boolean  @default(false)
+  isBlocked  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  sessions       Session[]
+  otps           Otp[]
+  leagues        League[]
+  memberships    LeagueMembership[]
+  fantasyTeams   FantasyTeam[]
+  wallet         Wallet?
+  adminAuditLogs AuditLog[]
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userAgent String   @default("")
+  isRevoked Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Otp {
+  id        String     @id @default(uuid())
+  purpose   OtpPurpose
+  codeHash  String
+  expiresAt DateTime
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  action    String
+  entity    String
+  entityId  String?
+  before    Json?
+  after     Json?
+  reason    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  adminId String
+  admin   User   @relation(fields: [adminId], references: [id], onDelete: Cascade)
+}
+
+// ─── Real World ───────────────────────────────────────────────────────────────
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+model Championship {
+  id         String   @id @default(uuid())
+  name       String
+  gender     Gender
+  seasonYear Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  athletes    Athlete[]
+  tournaments Tournament[]
+  leagues     League[]
+}
+
+enum TournamentStatus {
+  UPCOMING
+  REGISTRATION_OPEN
+  LOCKED
+  ONGOING
+  COMPLETED
+}
+
+model Tournament {
+  id           String           @id @default(uuid())
+  status       TournamentStatus @default(UPCOMING)
+  lineupLockAt DateTime?
+  startDate    DateTime
+  endDate      DateTime
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  championshipId String
+  championship   Championship @relation(fields: [championshipId], references: [id], onDelete: Cascade)
+
+  matches           Match[]
+  lineups           Lineup[]
+  gameweekStandings GameweekStanding[]
+  h2hMatchups       H2HMatchup[]
+}
+
+model Athlete {
+  id        String   @id @default(uuid())
+  firstName String
+  lastName  String
+  gender    Gender
+  rank      Int      @default(0)
+  cost      Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  championshipId String
+  championship   Championship @relation(fields: [championshipId], references: [id], onDelete: Cascade)
+
+  rosterEntries       RosterEntry[]
+  lineupSlots         LineupSlot[]
+  matchPoints         AthleteMatchPoints[]
+  matchesAsSideA1     Match[] @relation("MatchSideAAthlete1")
+  matchesAsSideA2     Match[] @relation("MatchSideAAthlete2")
+  matchesAsSideB1     Match[] @relation("MatchSideBAthlete1")
+  matchesAsSideB2     Match[] @relation("MatchSideBAthlete2")
+}
+
+enum MatchRound {
+  QUALIFICATION_R1
+  QUALIFICATION_R2
+  POOL
+  R12
+  QF
+  SF
+  FINAL
+  THIRD_PLACE
+}
+
+enum MatchStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CORRECTED
+}
+
+enum MatchSide {
+  A
+  B
+}
+
+model Match {
+  id          String      @id @default(uuid())
+  round       MatchRound
+  status      MatchStatus @default(SCHEDULED)
+  scheduledAt DateTime
+  set1A       Int?
+  set1B       Int?
+  set2A       Int?
+  set2B       Int?
+  set3A       Int?
+  set3B       Int?
+  winnerSide  MatchSide? // null until completed; A or B drives bonus calculation
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  sideAAthlete1Id String
+  sideAAthlete1   Athlete @relation("MatchSideAAthlete1", fields: [sideAAthlete1Id], references: [id], onDelete: Restrict)
+
+  sideAAthlete2Id String
+  sideAAthlete2   Athlete @relation("MatchSideAAthlete2", fields: [sideAAthlete2Id], references: [id], onDelete: Restrict)
+
+  sideBAthlete1Id String
+  sideBAthlete1   Athlete @relation("MatchSideBAthlete1", fields: [sideBAthlete1Id], references: [id], onDelete: Restrict)
+
+  sideBAthlete2Id String
+  sideBAthlete2   Athlete @relation("MatchSideBAthlete2", fields: [sideBAthlete2Id], references: [id], onDelete: Restrict)
+
+  athletePoints AthleteMatchPoints[]
+}
+
+model AthleteMatchPoints {
+  id          String    @id @default(uuid())
+  side        MatchSide
+  basePoints  Float     @default(0)
+  bonusPoints Float     @default(0)
+  totalPoints Float     @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  matchId String
+  match   Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  athleteId String
+  athlete   Athlete @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, athleteId])
+}
+
+// ─── League & Fantasy ─────────────────────────────────────────────────────────
+
+enum LeagueType {
+  PUBLIC
+  PRIVATE
+}
+
+enum RankingMode {
+  OVERALL
+  HEAD_TO_HEAD
+}
+
+model League {
+  id              String      @id @default(uuid())
+  name            String
+  type            LeagueType  @default(PUBLIC)
+  joinCode        String?     @unique
+  rankingMode     RankingMode @default(OVERALL)
+  isOpen          Boolean     @default(true)
+  rosterSize      Int
+  startersSize    Int
+  budgetPerTeam   Float
+  entryFeeCredits Float?
+  prize1st        String?
+  prize2nd        String?
+  prize3rd        String?
+  maxMembers      Int?
+  isMarketEnabled Boolean     @default(false)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  championshipId String
+  championship   Championship @relation(fields: [championshipId], references: [id], onDelete: Cascade)
+
+  memberships  LeagueMembership[]
+  fantasyTeams FantasyTeam[]
+  standings    GameweekStanding[]
+  h2hMatchups  H2HMatchup[]
+}
+
+model LeagueMembership {
+  id        String   @id @default(uuid())
+  feePaid   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  leagueId String
+  league   League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, leagueId])
+}
+
+model FantasyTeam {
+  id                  String   @id @default(uuid())
+  name                String
+  fantacoinsRemaining Float    @default(0)
+  totalPoints         Float    @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  leagueId String
+  league   League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  roster       RosterEntry[]
+  lineups      Lineup[]
+  standings    GameweekStanding[]
+  homeMatchups H2HMatchup[]       @relation("H2HHome")
+  awayMatchups H2HMatchup[]       @relation("H2HAway")
+}
+
+model RosterEntry {
+  id            String   @id @default(uuid())
+  purchasePrice Float
+  acquiredAt    DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  fantasyTeamId String
+  fantasyTeam   FantasyTeam @relation(fields: [fantasyTeamId], references: [id], onDelete: Cascade)
+
+  athleteId String
+  athlete   Athlete @relation(fields: [athleteId], references: [id], onDelete: Restrict)
+
+  @@unique([fantasyTeamId, athleteId])
+}
+
+model Lineup {
+  id        String    @id @default(uuid())
+  lockedAt  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  fantasyTeamId String
+  fantasyTeam   FantasyTeam @relation(fields: [fantasyTeamId], references: [id], onDelete: Cascade)
+
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  slots LineupSlot[]
+
+  @@unique([fantasyTeamId, tournamentId])
+}
+
+enum LineupRole {
+  STARTER
+  BENCH
+}
+
+model LineupSlot {
+  id              String     @id @default(uuid())
+  role            LineupRole
+  benchOrder      Int?
+  isSubstitutedIn Boolean    @default(false)
+  pointsScored    Float      @default(0)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  lineupId String
+  lineup   Lineup @relation(fields: [lineupId], references: [id], onDelete: Cascade)
+
+  athleteId String
+  athlete   Athlete @relation(fields: [athleteId], references: [id], onDelete: Restrict)
+
+  @@unique([lineupId, athleteId])
+}
+
+model GameweekStanding {
+  id               String   @id @default(uuid())
+  gameweekPoints   Float    @default(0)
+  cumulativePoints Float    @default(0)
+  rank             Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  leagueId String
+  league   League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  fantasyTeamId String
+  fantasyTeam   FantasyTeam @relation(fields: [fantasyTeamId], references: [id], onDelete: Cascade)
+
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@unique([leagueId, fantasyTeamId, tournamentId])
+}
+
+// Only relevant when League.rankingMode = HEAD_TO_HEAD
+enum H2HOutcome {
+  WIN
+  DRAW
+  LOSS
+}
+
+model H2HMatchup {
+  id          String      @id @default(uuid())
+  homeOutcome H2HOutcome? // null until tournament completes
+  awayOutcome H2HOutcome?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  leagueId String
+  league   League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  homeTeamId String
+  homeTeam   FantasyTeam @relation("H2HHome", fields: [homeTeamId], references: [id], onDelete: Cascade)
+
+  awayTeamId String
+  awayTeam   FantasyTeam @relation("H2HAway", fields: [awayTeamId], references: [id], onDelete: Cascade)
+
+  @@unique([leagueId, tournamentId, homeTeamId, awayTeamId])
+}
+
+// ─── Wallet & Credits ─────────────────────────────────────────────────────────
+
+enum CreditTransactionType {
+  PURCHASE
+  SPEND
+  BONUS
+  REFUND
+}
+
+enum CreditTransactionSource {
+  ADMIN
+  SYSTEM
+  STRIPE
+}
+
+model Wallet {
+  id        String   @id @default(uuid())
+  balance   Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  transactions CreditTransaction[]
+}
+
+model CreditPack {
+  id            String   @id @default(uuid())
+  name          String
+  credits       Int
+  priceCents    Int
+  stripePriceId String   @unique
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model CreditTransaction {
+  id         String                  @id @default(uuid())
+  type       CreditTransactionType
+  source     CreditTransactionSource
+  amount     Float
+  newBalance Float
+  meta       Json?
+  createdAt  DateTime                @default(now())
+  updatedAt  DateTime                @updatedAt
+
+  walletId String
+  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+}

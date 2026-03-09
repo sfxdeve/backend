@@ -1,226 +1,374 @@
-import { Match, Tournament, TournamentPair } from "../../models/RealWorld.js";
-import { AthleteMatchPoints } from "../../models/Scoring.js";
-import { AdminAuditLog } from "../../models/Admin.js";
-import { MatchStatus } from "../../models/enums.js";
+import { prisma } from "../../prisma/index.js";
 import { AppError } from "../../lib/errors.js";
-import { runCascade } from "../../scoring/cascade.js";
-import { logger } from "../../lib/logger.js";
+import { paginationMeta, paginationOptions } from "../../lib/pagination.js";
+import {
+  matchSelector,
+  athleteMatchPointsSelector,
+  athleteSelector,
+} from "../../prisma/selectors.js";
+import { runScoringPipeline } from "../../lib/scoring.js";
+import { generateNextRound } from "../../lib/brackets.js";
 import type {
+  MatchQueryType,
+  TournamentParamsType,
+  MatchParamsType,
   CreateMatchBodyType,
   UpdateMatchBodyType,
-  MatchQueryParamsType,
+  MatchResultBodyType,
+  ImportMatchesBodyType,
+  ImportMatchRowType,
 } from "./schema.js";
 
-function isTerminalStatus(status: MatchStatus): boolean {
-  return status === MatchStatus.COMPLETED || status === MatchStatus.CORRECTED;
+const matchWithAthletesSelector = {
+  ...matchSelector,
+  tournamentId: true,
+  sideAAthlete1Id: true,
+  sideAAthlete2Id: true,
+  sideBAthlete1Id: true,
+  sideBAthlete2Id: true,
+  sideAAthlete1: { select: athleteSelector },
+  sideAAthlete2: { select: athleteSelector },
+  sideBAthlete1: { select: athleteSelector },
+  sideBAthlete2: { select: athleteSelector },
+} as const;
+
+export async function listByTournament({
+  id: tournamentId,
+  page,
+  limit,
+}: TournamentParamsType & MatchQueryType) {
+  const options = paginationOptions({ page, limit });
+
+  const [items, total] = await Promise.all([
+    prisma.match.findMany({
+      where: { tournamentId },
+      select: matchWithAthletesSelector,
+      orderBy: { scheduledAt: "asc" },
+      skip: options.skip,
+      take: options.take,
+    }),
+    prisma.match.count({ where: { tournamentId } }),
+  ]);
+
+  return {
+    message: "Matches fetched successfully",
+    meta: paginationMeta(total, { page, limit }),
+    items,
+  };
 }
 
-export async function list(query: MatchQueryParamsType) {
-  const filter: Record<string, unknown> = {};
-
-  if (query.tournamentId) {
-    filter.tournamentId = query.tournamentId;
-  }
-
-  if (query.round) {
-    filter.round = query.round;
-  }
-
-  if (query.status) {
-    filter.status = query.status;
-  }
-
-  return Match.find(filter)
-    .populate({
-      path: "pairAId",
-      populate: [
-        { path: "athleteAId", select: "firstName lastName" },
-        { path: "athleteBId", select: "firstName lastName" },
-      ],
-    })
-    .populate({
-      path: "pairBId",
-      populate: [
-        { path: "athleteAId", select: "firstName lastName" },
-        { path: "athleteBId", select: "firstName lastName" },
-      ],
-    })
-    .sort({ scheduledAt: 1 })
-    .lean();
-}
-
-export async function getById(id: string) {
-  const match = await Match.findById(id)
-    .populate({
-      path: "pairAId",
-      populate: [
-        { path: "athleteAId", select: "firstName lastName pictureUrl" },
-        { path: "athleteBId", select: "firstName lastName pictureUrl" },
-      ],
-    })
-    .populate({
-      path: "pairBId",
-      populate: [
-        { path: "athleteAId", select: "firstName lastName pictureUrl" },
-        { path: "athleteBId", select: "firstName lastName pictureUrl" },
-      ],
-    })
-    .lean();
+export async function getById({ id }: MatchParamsType) {
+  const match = await prisma.match.findUnique({
+    where: { id },
+    select: {
+      ...matchWithAthletesSelector,
+      athletePoints: { select: athleteMatchPointsSelector },
+    },
+  });
 
   if (!match) {
     throw new AppError("NOT_FOUND", "Match not found");
   }
 
-  const points = await AthleteMatchPoints.find({ matchId: id })
-    .populate("athleteId", "firstName lastName")
-    .lean();
-
-  return { ...match, athletePoints: points };
+  return { message: "Match fetched successfully", match };
 }
 
-export async function create(body: CreateMatchBodyType) {
-  const tournament = await Tournament.findById(body.tournamentId).lean();
+export async function create({
+  adminId,
+  ...data
+}: { adminId: string } & CreateMatchBodyType) {
+  // Ensure tournament exists
+  const tournament = await prisma.tournament.findUnique({
+    where: { id: data.tournamentId },
+    select: { id: true, championshipId: true },
+  });
 
   if (!tournament) {
     throw new AppError("NOT_FOUND", "Tournament not found");
   }
 
-  if (body.pairAId === body.pairBId) {
-    throw new AppError("BAD_REQUEST", "pairAId and pairBId must be different");
-  }
+  // Validate all 4 athletes exist and belong to the championship
+  const athleteIds = [
+    data.sideAAthlete1Id,
+    data.sideAAthlete2Id,
+    data.sideBAthlete1Id,
+    data.sideBAthlete2Id,
+  ];
 
-  const [pairA, pairB] = await Promise.all([
-    TournamentPair.findById(body.pairAId).lean(),
-    TournamentPair.findById(body.pairBId).lean(),
-  ]);
-
-  if (!pairA || !pairB) {
-    throw new AppError("NOT_FOUND", "One or both pairs not found");
-  }
-
-  if (String(pairA.tournamentId) !== String(tournament._id)) {
+  if (new Set(athleteIds).size !== 4) {
     throw new AppError(
       "BAD_REQUEST",
-      "Pair A does not belong to this match tournament",
+      "All four athlete slots must be distinct",
     );
   }
 
-  if (String(pairB.tournamentId) !== String(tournament._id)) {
-    throw new AppError(
-      "BAD_REQUEST",
-      "Pair B does not belong to this match tournament",
-    );
-  }
-
-  return Match.create(body);
-}
-
-export async function update(
-  id: string,
-  body: UpdateMatchBodyType,
-  adminId: string,
-) {
-  const before = await Match.findById(id).lean();
-
-  if (!before) {
-    throw new AppError("NOT_FOUND", "Match not found");
-  }
-
-  const { reason, ...updateFields } = body;
-
-  const nextStatus = updateFields.status ?? before.status;
-  const hasWinnerPairUpdate = Object.prototype.hasOwnProperty.call(
-    updateFields,
-    "winnerPairId",
-  );
-  const nextWinnerPairId = hasWinnerPairUpdate
-    ? (updateFields.winnerPairId ?? null)
-    : (before.winnerPairId?.toString() ?? null);
-  const allowedWinnerIds = new Set([
-    String(before.pairAId),
-    String(before.pairBId),
-  ]);
-
-  if (nextWinnerPairId && !allowedWinnerIds.has(nextWinnerPairId)) {
-    throw new AppError(
-      "BAD_REQUEST",
-      "winnerPairId must reference pairAId or pairBId for this match",
-    );
-  }
-
-  if (isTerminalStatus(nextStatus) && !nextWinnerPairId) {
-    throw new AppError(
-      "BAD_REQUEST",
-      "winnerPairId is required when status is COMPLETED or CORRECTED",
-    );
-  }
-
-  const wasTerminal = isTerminalStatus(before.status);
-  const willBeTerminal = isTerminalStatus(nextStatus);
-
-  const { winnerPairId, ...restUpdateFields } = updateFields;
-  const setFields: Record<string, unknown> = { ...restUpdateFields };
-  const unsetFields: Record<string, 1> = {};
-
-  if (hasWinnerPairUpdate) {
-    if (winnerPairId) {
-      setFields.winnerPairId = winnerPairId;
-    } else {
-      unsetFields.winnerPairId = 1;
-    }
-  } else if (wasTerminal && !willBeTerminal && before.winnerPairId) {
-    // Keep non-terminal matches clean when demoting from a finalized result.
-    unsetFields.winnerPairId = 1;
-  }
-
-  const updateDoc: {
-    $set?: Record<string, unknown>;
-    $unset?: Record<string, 1>;
-  } = {};
-
-  if (Object.keys(setFields).length > 0) {
-    updateDoc.$set = setFields;
-  }
-
-  if (Object.keys(unsetFields).length > 0) {
-    updateDoc.$unset = unsetFields;
-  }
-
-  const doc =
-    Object.keys(updateDoc).length > 0
-      ? await Match.findByIdAndUpdate(id, updateDoc, {
-          new: true,
-          runValidators: true,
-        }).lean()
-      : await Match.findById(id).lean();
-
-  if (!doc) {
-    throw new AppError("NOT_FOUND", "Match not found");
-  }
-
-  await AdminAuditLog.create({
-    adminId,
-    action: "UPDATE_MATCH",
-    entity: "Match",
-    entityId: id,
-    before: before as unknown as Record<string, unknown>,
-    after: doc as unknown as Record<string, unknown>,
-    reason,
+  const athletes = await prisma.athlete.findMany({
+    where: {
+      id: { in: athleteIds },
+      championshipId: tournament.championshipId,
+    },
+    select: { id: true },
   });
 
-  if (willBeTerminal) {
+  if (athletes.length !== 4) {
+    throw new AppError(
+      "BAD_REQUEST",
+      "One or more athletes not found in this championship",
+    );
+  }
+
+  const match = await prisma.match.create({
+    data,
+    select: matchWithAthletesSelector,
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      action: "CREATE_MATCH",
+      entity: "Match",
+      entityId: match.id,
+      before: {},
+      after: match,
+      adminId,
+    },
+  });
+
+  return { message: "Match created successfully", match };
+}
+
+export async function update({
+  adminId,
+  id,
+  ...data
+}: { adminId: string } & MatchParamsType & UpdateMatchBodyType) {
+  const existing = await prisma.match.findUnique({
+    where: { id },
+    select: matchWithAthletesSelector,
+  });
+
+  if (!existing) {
+    throw new AppError("NOT_FOUND", "Match not found");
+  }
+
+  if (existing.status === "COMPLETED" || existing.status === "CORRECTED") {
+    throw new AppError(
+      "BAD_REQUEST",
+      "Cannot update athletes/schedule on a completed match. Use the result endpoint to correct results.",
+    );
+  }
+
+  const match = await prisma.match.update({
+    where: { id },
+    data,
+    select: matchWithAthletesSelector,
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      action: "UPDATE_MATCH",
+      entity: "Match",
+      entityId: id,
+      before: existing,
+      after: match,
+      adminId,
+    },
+  });
+
+  return { message: "Match updated successfully", match };
+}
+
+// ─── Import ───────────────────────────────────────────────────────────────────
+
+function hasResult(row: ImportMatchRowType): boolean {
+  return (
+    row.set1A !== undefined &&
+    row.set1B !== undefined &&
+    row.set2A !== undefined &&
+    row.set2B !== undefined &&
+    row.winnerSide !== undefined
+  );
+}
+
+export async function importMatches({
+  adminId,
+  rows,
+}: { adminId: string } & ImportMatchesBodyType) {
+  let created = 0;
+  let updated = 0;
+  const errors: { row: number; message: string }[] = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]!;
     try {
-      await runCascade(id, "apply");
+      // Validate tournament
+      const tournament = await prisma.tournament.findUnique({
+        where: { id: row.tournamentId },
+        select: { id: true, championshipId: true },
+      });
+      if (!tournament) {
+        errors.push({ row: i + 1, message: "Tournament not found" });
+        continue;
+      }
+
+      // Validate 4 distinct athletes in championship
+      const athleteIds = [
+        row.sideAAthlete1Id,
+        row.sideAAthlete2Id,
+        row.sideBAthlete1Id,
+        row.sideBAthlete2Id,
+      ];
+      if (new Set(athleteIds).size !== 4) {
+        errors.push({
+          row: i + 1,
+          message: "All four athlete slots must be distinct",
+        });
+        continue;
+      }
+      const athletes = await prisma.athlete.findMany({
+        where: {
+          id: { in: athleteIds },
+          championshipId: tournament.championshipId,
+        },
+        select: { id: true },
+      });
+      if (athletes.length !== 4) {
+        errors.push({
+          row: i + 1,
+          message: "One or more athletes not found in this championship",
+        });
+        continue;
+      }
+
+      const withResult = hasResult(row);
+      const matchData = {
+        tournamentId: row.tournamentId,
+        round: row.round,
+        scheduledAt: row.scheduledAt,
+        sideAAthlete1Id: row.sideAAthlete1Id,
+        sideAAthlete2Id: row.sideAAthlete2Id,
+        sideBAthlete1Id: row.sideBAthlete1Id,
+        sideBAthlete2Id: row.sideBAthlete2Id,
+        ...(withResult && {
+          set1A: row.set1A!,
+          set1B: row.set1B!,
+          set2A: row.set2A!,
+          set2B: row.set2B!,
+          set3A: row.set3A ?? null,
+          set3B: row.set3B ?? null,
+          winnerSide: row.winnerSide!,
+          status: "COMPLETED" as const,
+        }),
+      };
+
+      // Check if match already exists (same tournament + round + athletes)
+      const existing = await prisma.match.findFirst({
+        where: {
+          tournamentId: row.tournamentId,
+          round: row.round,
+          sideAAthlete1Id: row.sideAAthlete1Id,
+          sideAAthlete2Id: row.sideAAthlete2Id,
+          sideBAthlete1Id: row.sideBAthlete1Id,
+          sideBAthlete2Id: row.sideBAthlete2Id,
+        },
+        select: { id: true, status: true },
+      });
+
+      let matchId: string;
+      if (existing) {
+        await prisma.match.update({
+          where: { id: existing.id },
+          data: matchData,
+        });
+        matchId = existing.id;
+        updated++;
+      } else {
+        const created_ = await prisma.match.create({
+          data: matchData,
+          select: { id: true },
+        });
+        matchId = created_.id;
+        created++;
+      }
+
+      // Trigger scoring if result is included
+      if (withResult) {
+        await runScoringPipeline(matchId);
+        const isNew =
+          !existing ||
+          existing.status === "SCHEDULED" ||
+          existing.status === "IN_PROGRESS";
+        if (isNew) {
+          await generateNextRound(row.tournamentId);
+        }
+      }
     } catch (err) {
-      logger.error({ err, matchId: id, mode: "apply" }, "Cascade error");
-    }
-  } else if (wasTerminal && !willBeTerminal) {
-    try {
-      await runCascade(id, "rollback");
-    } catch (err) {
-      logger.error({ err, matchId: id, mode: "rollback" }, "Cascade error");
+      errors.push({
+        row: i + 1,
+        message: err instanceof Error ? err.message : "Unknown error",
+      });
     }
   }
 
-  return doc;
+  await prisma.auditLog.create({
+    data: {
+      action: "IMPORT_MATCHES",
+      entity: "Match",
+      before: {},
+      after: { created, updated, errors: errors.length },
+      adminId,
+    },
+  });
+
+  return { message: "Import complete", created, updated, errors };
+}
+
+export async function enterResult({
+  adminId,
+  id,
+  ...result
+}: { adminId: string } & MatchParamsType & MatchResultBodyType) {
+  const existing = await prisma.match.findUnique({
+    where: { id },
+    select: matchWithAthletesSelector,
+  });
+
+  if (!existing) {
+    throw new AppError("NOT_FOUND", "Match not found");
+  }
+
+  const isCorrection =
+    existing.status === "COMPLETED" || existing.status === "CORRECTED";
+  const newStatus = isCorrection ? "CORRECTED" : "COMPLETED";
+
+  const match = await prisma.match.update({
+    where: { id },
+    data: { ...result, status: newStatus },
+    select: matchWithAthletesSelector,
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      action: isCorrection ? "CORRECT_MATCH_RESULT" : "ENTER_MATCH_RESULT",
+      entity: "Match",
+      entityId: id,
+      before: existing,
+      after: match,
+      adminId,
+    },
+  });
+
+  // Trigger full scoring pipeline
+  await runScoringPipeline(id);
+
+  // Auto-generate next bracket round on first result entry (not corrections)
+  if (!isCorrection) {
+    await generateNextRound(existing.tournamentId);
+  }
+
+  return {
+    message: isCorrection
+      ? "Match result corrected successfully"
+      : "Match result entered successfully",
+    match,
+  };
 }

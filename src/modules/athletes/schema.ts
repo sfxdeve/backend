@@ -1,40 +1,31 @@
 import { z } from "zod";
-import { Gender } from "../../models/enums.js";
+import { paginationSchema } from "../../lib/pagination.js";
 
-const NonNegativeNumber = z.number().min(0);
+export const AthleteQuerySchema = paginationSchema;
+export type AthleteQueryType = z.infer<typeof AthleteQuerySchema>;
 
-export const CreateAthleteBody = z.object({
-  firstName: z.string().min(1).max(100),
-  lastName: z.string().min(1).max(100),
-  gender: z.enum([Gender.M, Gender.F]),
-  championshipId: z.string().length(24),
-  pictureUrl: z.url().optional(),
-  entryPoints: NonNegativeNumber.default(0),
-  globalPoints: NonNegativeNumber.default(0),
-  fantacoinCost: NonNegativeNumber.default(0),
+export const ChampionshipParamsSchema = z.object({
+  id: z.string().uuid(),
 });
+export type ChampionshipParamsType = z.infer<typeof ChampionshipParamsSchema>;
 
-export const UpdateAthleteBody = z.object({
-  firstName: z.string().min(1).max(100).optional(),
-  lastName: z.string().min(1).max(100).optional(),
-  gender: z.enum([Gender.M, Gender.F]).optional(),
-  championshipId: z.string().length(24).optional(),
-  pictureUrl: z.url().optional(),
-  entryPoints: NonNegativeNumber.optional(),
-  globalPoints: NonNegativeNumber.optional(),
-  fantacoinCost: NonNegativeNumber.optional(),
+export const AthleteParamsSchema = z.object({
+  id: z.string().uuid(),
 });
+export type AthleteParamsType = z.infer<typeof AthleteParamsSchema>;
 
-export const AthleteQueryParams = z.object({
-  championshipId: z.string().length(24).optional(),
-  gender: z.enum([Gender.M, Gender.F]).optional(),
-  search: z.string().min(1).optional(),
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+export const CreateAthleteBodySchema = z.object({
+  firstName: z.string().min(1).max(64),
+  lastName: z.string().min(1).max(64),
+  gender: z.enum(["MALE", "FEMALE"]),
+  rank: z.number().int().min(1),
+  championshipId: z.string().uuid(),
 });
+export type CreateAthleteBodyType = z.infer<typeof CreateAthleteBodySchema>;
 
-export type CreateAthleteBodyType = z.infer<typeof CreateAthleteBody>;
-
-export type UpdateAthleteBodyType = z.infer<typeof UpdateAthleteBody>;
-
-export type AthleteQueryParamsType = z.infer<typeof AthleteQueryParams>;
+export const UpdateAthleteBodySchema = z.object({
+  firstName: z.string().min(1).max(64).optional(),
+  lastName: z.string().min(1).max(64).optional(),
+  rank: z.number().int().min(1).optional(),
+});
+export type UpdateAthleteBodyType = z.infer<typeof UpdateAthleteBodySchema>;

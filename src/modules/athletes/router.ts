@@ -3,56 +3,79 @@ import { validateRequest } from "../../middlewares/validate-request.js";
 import { requireAuth, requireAdmin } from "../../middlewares/auth.js";
 import * as service from "./service.js";
 import {
-  CreateAthleteBody,
-  UpdateAthleteBody,
-  AthleteQueryParams,
-  type AthleteQueryParamsType,
+  AthleteQuerySchema,
+  type AthleteQueryType,
+  ChampionshipParamsSchema,
+  type ChampionshipParamsType,
+  AthleteParamsSchema,
+  type AthleteParamsType,
+  CreateAthleteBodySchema,
+  UpdateAthleteBodySchema,
 } from "./schema.js";
 
 const router = Router();
 
+// GET /championships/:id/athletes — registered in championships router via athletesRouter
 router.get(
-  "/",
+  "/championships/:id/athletes",
   requireAuth,
-  validateRequest({ query: AthleteQueryParams }),
+  validateRequest({
+    params: ChampionshipParamsSchema,
+    query: AthleteQuerySchema,
+  }),
   async (req: Request, res: Response) => {
-    const data = await service.list(
-      req.query as unknown as AthleteQueryParamsType,
-    );
+    const result = await service.listByChampionship({
+      ...(req.params as unknown as ChampionshipParamsType),
+      ...(req.query as unknown as AthleteQueryType),
+    });
 
-    res.json({ success: true, ...data });
+    res.status(200).json(result);
   },
 );
 
 router.post(
-  "/",
+  "/athletes",
   requireAdmin,
-  validateRequest({ body: CreateAthleteBody }),
+  validateRequest({ body: CreateAthleteBodySchema }),
   async (req: Request, res: Response) => {
-    const data = await service.create(req.body);
+    const result = await service.create({
+      adminId: req.auth!.userId,
+      ...req.body,
+    });
 
-    res.status(201).json({ success: true, data });
+    res.status(201).json(result);
   },
 );
 
-router.get("/:id", requireAuth, async (req: Request, res: Response) => {
-  const data = await service.getById(req.params.id as string);
-
-  res.json({ success: true, data });
-});
-
 router.patch(
-  "/:id",
+  "/athletes/:id",
   requireAdmin,
-  validateRequest({ body: UpdateAthleteBody }),
+  validateRequest({
+    params: AthleteParamsSchema,
+    body: UpdateAthleteBodySchema,
+  }),
   async (req: Request, res: Response) => {
-    const data = await service.update(
-      req.params.id as string,
-      req.body,
-      req.auth!.userId,
-    );
+    const result = await service.update({
+      adminId: req.auth!.userId,
+      ...(req.params as unknown as AthleteParamsType),
+      ...req.body,
+    });
 
-    res.json({ success: true, data });
+    res.status(200).json(result);
+  },
+);
+
+router.delete(
+  "/athletes/:id",
+  requireAdmin,
+  validateRequest({ params: AthleteParamsSchema }),
+  async (req: Request, res: Response) => {
+    const result = await service.remove({
+      adminId: req.auth!.userId,
+      ...(req.params as unknown as AthleteParamsType),
+    });
+
+    res.status(200).json(result);
   },
 );
 

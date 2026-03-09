@@ -3,108 +3,96 @@ import { validateRequest } from "../../middlewares/validate-request.js";
 import { requireAuth, requireAdmin } from "../../middlewares/auth.js";
 import * as service from "./service.js";
 import {
-  CreateTournamentBody,
-  UpdateTournamentBody,
-  AddPairBody,
-  TournamentQueryParams,
-  type TournamentQueryParamsType,
+  TournamentQuerySchema,
+  type TournamentQueryType,
+  ChampionshipParamsSchema,
+  type ChampionshipParamsType,
+  TournamentParamsSchema,
+  type TournamentParamsType,
+  CreateTournamentBodySchema,
+  UpdateTournamentBodySchema,
+  LineupLockOverrideBodySchema,
 } from "./schema.js";
 
 const router = Router();
 
 router.get(
-  "/",
+  "/championships/:id/tournaments",
   requireAuth,
-  validateRequest({ query: TournamentQueryParams }),
+  validateRequest({
+    params: ChampionshipParamsSchema,
+    query: TournamentQuerySchema,
+  }),
   async (req: Request, res: Response) => {
-    const data = await service.list(
-      req.query as unknown as TournamentQueryParamsType,
-    );
+    const result = await service.listByChampionship({
+      ...(req.params as unknown as ChampionshipParamsType),
+      ...(req.query as unknown as TournamentQueryType),
+    });
 
-    res.json({ success: true, ...data });
+    res.status(200).json(result);
+  },
+);
+
+router.get(
+  "/tournaments/:id",
+  requireAuth,
+  validateRequest({ params: TournamentParamsSchema }),
+  async (req: Request, res: Response) => {
+    const result = await service.getById(
+      req.params as unknown as TournamentParamsType,
+    );
+    res.status(200).json(result);
   },
 );
 
 router.post(
-  "/",
+  "/tournaments",
   requireAdmin,
-  validateRequest({ body: CreateTournamentBody }),
+  validateRequest({ body: CreateTournamentBodySchema }),
   async (req: Request, res: Response) => {
-    const data = await service.create(req.body);
+    const result = await service.create({
+      adminId: req.auth!.userId,
+      ...req.body,
+    });
 
-    res.status(201).json({ success: true, data });
+    res.status(201).json(result);
   },
 );
-
-router.get("/:id", requireAuth, async (req: Request, res: Response) => {
-  const data = await service.getById(req.params.id as string);
-
-  res.json({ success: true, data });
-});
 
 router.patch(
-  "/:id",
+  "/tournaments/:id",
   requireAdmin,
-  validateRequest({ body: UpdateTournamentBody }),
+  validateRequest({
+    params: TournamentParamsSchema,
+    body: UpdateTournamentBodySchema,
+  }),
   async (req: Request, res: Response) => {
-    const data = await service.update(
-      req.params.id as string,
-      req.body,
-      req.auth!.userId,
-    );
+    const result = await service.update({
+      adminId: req.auth!.userId,
+      ...(req.params as unknown as TournamentParamsType),
+      ...req.body,
+    });
 
-    res.json({ success: true, data });
+    res.status(200).json(result);
   },
 );
 
-router.get("/:id/pairs", requireAuth, async (req: Request, res: Response) => {
-  const data = await service.getPairs(req.params.id as string);
-
-  res.json({ success: true, data });
-});
-
-router.post(
-  "/:id/pairs",
+router.patch(
+  "/tournaments/:id/lineup-lock",
   requireAdmin,
-  validateRequest({ body: AddPairBody }),
+  validateRequest({
+    params: TournamentParamsSchema,
+    body: LineupLockOverrideBodySchema,
+  }),
   async (req: Request, res: Response) => {
-    const data = await service.addPair(req.params.id as string, req.body);
+    const result = await service.overrideLineupLock({
+      adminId: req.auth!.userId,
+      ...(req.params as unknown as TournamentParamsType),
+      ...req.body,
+    });
 
-    res.status(201).json({ success: true, data });
+    res.status(200).json(result);
   },
 );
-
-router.delete(
-  "/:id/pairs/:pairId",
-  requireAdmin,
-  async (req: Request, res: Response) => {
-    await service.removePair(
-      req.params.id as string,
-      req.params.pairId as string,
-    );
-    res.json({ success: true, data: { message: "Pair removed" } });
-  },
-);
-
-router.post("/:id/lock", requireAdmin, async (req: Request, res: Response) => {
-  const data = await service.lockLineups(
-    req.params.id as string,
-    req.auth!.userId,
-  );
-
-  res.json({ success: true, data });
-});
-
-router.get("/:id/bracket", requireAuth, async (req: Request, res: Response) => {
-  const data = await service.getBracket(req.params.id as string);
-
-  res.json({ success: true, data });
-});
-
-router.get("/:id/results", requireAuth, async (req: Request, res: Response) => {
-  const data = await service.getResults(req.params.id as string);
-
-  res.json({ success: true, data });
-});
 
 export default router;

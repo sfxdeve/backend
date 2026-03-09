@@ -2,12 +2,11 @@ import crypto from "node:crypto";
 import express, { type Express, type Request, type Response } from "express";
 import helmet from "helmet";
 import cors from "cors";
-import cookieParser from "cookie-parser";
 import { pinoHttp } from "pino-http";
 import { env } from "./lib/env.js";
 import { logger } from "./lib/logger.js";
-import { connectDb, disconnectDb, isDbConnected } from "./lib/db.js";
-import { seedAdmin, seedCreditPacks } from "./lib/seed.js";
+import { connectDb, disconnectDb } from "./lib/db.js";
+import { prisma } from "./prisma/index.js";
 import {
   authRateLimiter,
   defaultRateLimiter,
@@ -15,14 +14,14 @@ import {
 import { notFoundHandler, errorHandler } from "./middlewares/error-handler.js";
 import authRouter from "./modules/auth/router.js";
 import championshipsRouter from "./modules/championships/router.js";
+import creditsRouter from "./modules/credits/router.js";
+import auditLogsRouter from "./modules/audit-logs/router.js";
 import athletesRouter from "./modules/athletes/router.js";
 import tournamentsRouter from "./modules/tournaments/router.js";
-import matchesRouter from "./modules/matches/router.js";
 import leaguesRouter from "./modules/leagues/router.js";
-import fantasyTeamsRouter from "./modules/fantasy-teams/router.js";
-import creditsRouter from "./modules/credits/router.js";
-import adminRouter from "./modules/admin/router.js";
-import "./events/handlers.js";
+import teamsRouter from "./modules/teams/router.js";
+import matchesRouter from "./modules/matches/router.js";
+import standingsRouter from "./modules/standings/router.js";
 
 export async function bootstrap(): Promise<{
   app: Express;
@@ -30,16 +29,12 @@ export async function bootstrap(): Promise<{
 }> {
   await connectDb();
 
-  await seedAdmin();
-
-  await seedCreditPacks();
-
   const app = express();
 
   app.use(helmet());
 
   const corsOrigins = env.CORS_ORIGINS.split(",")
-    .map((o) => o.trim())
+    .map((origin) => origin.trim())
     .filter(Boolean);
 
   app.use(
@@ -55,8 +50,6 @@ export async function bootstrap(): Promise<{
     `${prefix}/credits/webhook`,
     express.raw({ type: "application/json" }),
   );
-
-  app.use(cookieParser());
 
   app.use(express.json());
 
@@ -82,8 +75,10 @@ export async function bootstrap(): Promise<{
     res.json({ status: "ok" });
   });
 
-  app.get("/ready", (_req: Request, res: Response) => {
-    if (!isDbConnected()) {
+  app.get("/ready", async (_req: Request, res: Response) => {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+    } catch {
       res.status(503).json({ status: "unavailable", reason: "db" });
       return;
     }
@@ -93,13 +88,14 @@ export async function bootstrap(): Promise<{
 
   app.use(`${prefix}/auth`, authRateLimiter, authRouter);
   app.use(`${prefix}/championships`, championshipsRouter);
-  app.use(`${prefix}/athletes`, athletesRouter);
-  app.use(`${prefix}/tournaments`, tournamentsRouter);
-  app.use(`${prefix}/matches`, matchesRouter);
-  app.use(`${prefix}/leagues`, leaguesRouter);
-  app.use(`${prefix}/leagues/:id`, fantasyTeamsRouter);
   app.use(`${prefix}/credits`, creditsRouter);
-  app.use(`${prefix}/admin`, adminRouter);
+  app.use(`${prefix}/admin`, auditLogsRouter);
+  app.use(`${prefix}`, athletesRouter);
+  app.use(`${prefix}`, tournamentsRouter);
+  app.use(`${prefix}/leagues`, leaguesRouter);
+  app.use(`${prefix}/leagues`, teamsRouter);
+  app.use(`${prefix}/leagues`, standingsRouter);
+  app.use(`${prefix}`, matchesRouter);
 
   app.use(notFoundHandler);
 
