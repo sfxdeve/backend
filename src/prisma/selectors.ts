@@ -220,6 +220,7 @@ export const creditPackSelector = {
   id: true,
   name: true,
   credits: true,
+  priceCents: true,
   stripePriceId: true,
   isActive: true,
   createdAt: true,

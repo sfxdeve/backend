@@ -22,6 +22,10 @@ export const CreateCreditPackBodySchema = z.object({
     .number("Credits must be a number")
     .int("Credits must be an integer")
     .positive("Credits must be greater than 0"),
+  priceCents: z
+    .number("priceCents must be a number")
+    .int("priceCents must be an integer")
+    .positive("priceCents must be greater than 0"),
   stripePriceId: z
     .string("Stripe Price ID must be a string")
     .min(1, "Stripe Price ID must be at least 1 character"),

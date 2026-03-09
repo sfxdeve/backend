@@ -7,24 +7,28 @@ import { userSelector } from "./selectors.js";
 const DEFAULT_CREDIT_PACKS: Array<{
   name: string;
   credits: number;
+  priceCents: number;
   stripePriceId: string;
   isActive: boolean;
 }> = [
   {
     name: "Starter",
     credits: 100,
+    priceCents: 999,
     stripePriceId: "price_placeholder_starter",
     isActive: true,
   },
   {
     name: "Medium",
     credits: 500,
+    priceCents: 3999,
     stripePriceId: "price_placeholder_medium",
     isActive: true,
   },
   {
     name: "Premium",
     credits: 1200,
+    priceCents: 7999,
     stripePriceId: "price_placeholder_premium",
     isActive: true,
   },
