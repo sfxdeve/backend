@@ -238,3 +238,14 @@ export async function resetPassword(body: ResetPasswordBodyType) {
 
   return { message: "Password reset successfully. Please log in again." };
 }
+
+export async function getMe({ userId }: { userId: string }) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: userSelector,
+  });
+
+  if (!user) throw new AppError("NOT_FOUND", "User not found");
+
+  return { message: "Profile fetched successfully", user };
+}

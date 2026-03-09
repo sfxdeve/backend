@@ -104,7 +104,9 @@ export type MatchResultBodyType = z.infer<typeof MatchResultBodySchema>;
 
 // ─── Import ───────────────────────────────────────────────────────────────────
 
-const ImportMatchRowSchema = z.object({
+// Used for per-row validation when parsing an uploaded CSV / Excel file.
+// Set scores use coerce so that string values from CSV ("21") are accepted.
+export const ImportMatchRowSchema = z.object({
   tournamentId: z.uuid("Tournament ID must be a valid UUID"),
   round: z.enum(ROUNDS, `Round must be one of ${ROUNDS.join(", ")}`),
   scheduledAt: z.coerce.date("Scheduled time must be a date"),
@@ -112,33 +114,33 @@ const ImportMatchRowSchema = z.object({
   sideAAthlete2Id: z.uuid("Side A athlete 2 ID must be a valid UUID"),
   sideBAthlete1Id: z.uuid("Side B athlete 1 ID must be a valid UUID"),
   sideBAthlete2Id: z.uuid("Side B athlete 2 ID must be a valid UUID"),
-  // Optional result fields — all must be present together to enter result
-  set1A: z
+  // Optional result fields — all must be present together to enter a result
+  set1A: z.coerce
     .number("Set 1 side A score must be a number")
     .int("Set 1 side A score must be an integer")
     .min(0, "Set 1 side A score must be at least 0")
     .optional(),
-  set1B: z
+  set1B: z.coerce
     .number("Set 1 side B score must be a number")
     .int("Set 1 side B score must be an integer")
     .min(0, "Set 1 side B score must be at least 0")
     .optional(),
-  set2A: z
+  set2A: z.coerce
     .number("Set 2 side A score must be a number")
     .int("Set 2 side A score must be an integer")
     .min(0, "Set 2 side A score must be at least 0")
     .optional(),
-  set2B: z
+  set2B: z.coerce
     .number("Set 2 side B score must be a number")
     .int("Set 2 side B score must be an integer")
     .min(0, "Set 2 side B score must be at least 0")
     .optional(),
-  set3A: z
+  set3A: z.coerce
     .number("Set 3 side A score must be a number")
     .int("Set 3 side A score must be an integer")
     .min(0, "Set 3 side A score must be at least 0")
     .optional(),
-  set3B: z
+  set3B: z.coerce
     .number("Set 3 side B score must be a number")
     .int("Set 3 side B score must be an integer")
     .min(0, "Set 3 side B score must be at least 0")
@@ -146,11 +148,3 @@ const ImportMatchRowSchema = z.object({
   winnerSide: z.enum(["A", "B"], "Winner side must be one of A, B").optional(),
 });
 export type ImportMatchRowType = z.infer<typeof ImportMatchRowSchema>;
-
-export const ImportMatchesBodySchema = z.object({
-  rows: z
-    .array(ImportMatchRowSchema)
-    .min(1, "Rows must contain at least 1 item")
-    .max(500, "Rows must contain at most 500 items"),
-});
-export type ImportMatchesBodyType = z.infer<typeof ImportMatchesBodySchema>;

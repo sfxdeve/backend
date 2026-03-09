@@ -7,13 +7,14 @@ import {
   championshipSelector,
 } from "../../prisma/selectors.js";
 import { computeAthletePrice } from "../../lib/pricing.js";
+import { parseImportFile } from "../../lib/parse-import.js";
+import { AthleteImportRowSchema } from "./schema.js";
 import type {
   AthleteQueryType,
   AthleteParamsType,
   ChampionshipParamsType,
   CreateAthleteBodyType,
   UpdateAthleteBodyType,
-  ImportAthletesBodyType,
 } from "./schema.js";
 
 export async function listByChampionship({
@@ -156,8 +157,20 @@ export async function remove({
 
 export async function importAthletes({
   adminId,
-  rows,
-}: { adminId: string } & ImportAthletesBodyType) {
+  buffer,
+}: {
+  adminId: string;
+  buffer: Buffer;
+}) {
+  const rawRows = parseImportFile(buffer);
+
+  if (rawRows.length === 0) {
+    throw new AppError(
+      "BAD_REQUEST",
+      "The uploaded file contains no data rows",
+    );
+  }
+
   let created = 0;
   let updated = 0;
   const errors: { row: number; message: string }[] = [];
@@ -168,8 +181,18 @@ export async function importAthletes({
     { id: string; gender: string } | null
   >();
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i]!;
+  for (let i = 0; i < rawRows.length; i++) {
+    const rawRow = rawRows[i]!;
+
+    // Per-row schema validation (handles CSV string→number coercion via z.coerce)
+    const parsed = AthleteImportRowSchema.safeParse(rawRow);
+    if (!parsed.success) {
+      const msg = parsed.error.issues.map((e) => e.message).join("; ");
+      errors.push({ row: i + 1, message: msg });
+      continue;
+    }
+
+    const row = parsed.data;
     try {
       // Validate championship (cached)
       let championship = championshipCache.get(row.championshipId);

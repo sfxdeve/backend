@@ -106,4 +106,9 @@ router.post(
   },
 );
 
+router.get("/me", requireAuth, async (req: Request, res: Response) => {
+  const result = await service.getMe({ userId: req.auth!.userId });
+  res.status(200).json(result);
+});
+
 export default router;

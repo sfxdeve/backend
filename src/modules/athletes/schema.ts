@@ -53,6 +53,8 @@ export const UpdateAthleteBodySchema = z.object({
 });
 export type UpdateAthleteBodyType = z.infer<typeof UpdateAthleteBodySchema>;
 
+// Used for per-row validation when parsing an uploaded CSV / Excel file.
+// rank uses coerce so that string values from CSV ("5") are also accepted.
 export const AthleteImportRowSchema = z.object({
   firstName: z
     .string("First name must be a string")
@@ -63,18 +65,10 @@ export const AthleteImportRowSchema = z.object({
     .min(1, "Last name must be at least 1 character")
     .max(64, "Last name must be at most 64 characters"),
   gender: z.enum(["MALE", "FEMALE"], "Gender must be one of MALE, FEMALE"),
-  rank: z
+  rank: z.coerce
     .number("Rank must be a number")
     .int("Rank must be an integer")
     .min(1, "Rank must be at least 1"),
   championshipId: z.uuid("Championship ID must be a valid UUID"),
 });
 export type AthleteImportRowType = z.infer<typeof AthleteImportRowSchema>;
-
-export const ImportAthletesBodySchema = z.object({
-  rows: z
-    .array(AthleteImportRowSchema)
-    .min(1, "Rows must contain at least 1 item")
-    .max(500, "Rows must contain at most 500 items"),
-});
-export type ImportAthletesBodyType = z.infer<typeof ImportAthletesBodySchema>;

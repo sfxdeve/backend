@@ -52,3 +52,23 @@ export type CreateChampionshipBodyType = z.infer<
 export type UpdateChampionshipBodyType = z.infer<
   typeof UpdateChampionshipBodySchema
 >;
+
+export const ChampionshipImportRowSchema = z.object({
+  name: z
+    .string("Name must be a string")
+    .min(3, "Name must be at least 3 characters")
+    .max(128, "Name must be at most 128 characters"),
+  gender: z.enum(
+    Gender,
+    `Gender must be one of ${Object.values(Gender).join(", ")}`,
+  ),
+  seasonYear: z.coerce
+    .number("Season year must be a number")
+    .int("Season year must be an integer")
+    .min(2020, "Season year must be at least 2020")
+    .max(2100, "Season year must be at most 2100"),
+});
+
+export type ChampionshipImportRowType = z.infer<
+  typeof ChampionshipImportRowSchema
+>;

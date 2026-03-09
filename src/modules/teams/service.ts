@@ -218,13 +218,15 @@ export async function saveLineup({
     throw new AppError("NOT_FOUND", "Tournament not found");
   }
 
-  // Block lineup changes after lock
-  if (tournament.lineupLockAt && new Date() >= tournament.lineupLockAt) {
-    throw new AppError("BAD_REQUEST", "Lineup is locked for this tournament");
-  }
+  // Block lineup changes once locked or beyond
+  const isLocked =
+    tournament.status === "LOCKED" ||
+    tournament.status === "ONGOING" ||
+    tournament.status === "COMPLETED" ||
+    (tournament.lineupLockAt !== null && new Date() >= tournament.lineupLockAt);
 
-  if (tournament.status === "COMPLETED") {
-    throw new AppError("BAD_REQUEST", "Tournament is already completed");
+  if (isLocked) {
+    throw new AppError("BAD_REQUEST", "Lineup is locked for this tournament");
   }
 
   const team = await getTeamForUser(userId, leagueId);

@@ -11,6 +11,8 @@ import {
 import { runTournamentCompletion, lockLineups } from "../../lib/scoring.js";
 import { sendLockOverrideAlert } from "../../lib/notifications.js";
 import { logger } from "../../lib/logger.js";
+import { parseImportFile } from "../../lib/parse-import.js";
+import { TournamentImportRowSchema } from "./schema.js";
 import type {
   TournamentQueryType,
   TournamentParamsType,
@@ -204,6 +206,107 @@ export async function overrideLineupLock({
   );
 
   return { message: "Lineup lock updated successfully", tournament };
+}
+
+export async function importTournaments({
+  adminId,
+  buffer,
+}: {
+  adminId: string;
+  buffer: Buffer;
+}) {
+  const rawRows = parseImportFile(buffer);
+
+  if (rawRows.length === 0) {
+    throw new AppError(
+      "BAD_REQUEST",
+      "The uploaded file contains no data rows",
+    );
+  }
+
+  let created = 0;
+  let updated = 0;
+  const errors: { row: number; message: string }[] = [];
+
+  // Cache championship lookups
+  const championshipCache = new Map<string, boolean>();
+
+  for (let i = 0; i < rawRows.length; i++) {
+    const rawRow = rawRows[i]!;
+
+    const parsed = TournamentImportRowSchema.safeParse(rawRow);
+    if (!parsed.success) {
+      const msg = parsed.error.issues.map((e) => e.message).join("; ");
+      errors.push({ row: i + 1, message: msg });
+      continue;
+    }
+
+    const row = parsed.data;
+    try {
+      // Validate championship (cached)
+      let championshipExists = championshipCache.get(row.championshipId);
+      if (championshipExists === undefined) {
+        const champ = await prisma.championship.findUnique({
+          where: { id: row.championshipId },
+          select: { id: true },
+        });
+        championshipExists = champ !== null;
+        championshipCache.set(row.championshipId, championshipExists);
+      }
+
+      if (!championshipExists) {
+        errors.push({ row: i + 1, message: "Championship not found" });
+        continue;
+      }
+
+      // Upsert by (championshipId, startDate)
+      const existing = await prisma.tournament.findFirst({
+        where: { championshipId: row.championshipId, startDate: row.startDate },
+        select: { id: true },
+      });
+
+      if (existing) {
+        await prisma.tournament.update({
+          where: { id: existing.id },
+          data: {
+            endDate: row.endDate,
+            ...(row.lineupLockAt !== undefined
+              ? { lineupLockAt: row.lineupLockAt }
+              : {}),
+          },
+          select: tournamentSelector,
+        });
+        updated++;
+      } else {
+        await prisma.tournament.create({
+          data: {
+            championshipId: row.championshipId,
+            startDate: row.startDate,
+            endDate: row.endDate,
+            lineupLockAt: row.lineupLockAt,
+          },
+          select: tournamentSelector,
+        });
+        created++;
+      }
+    } catch {
+      errors.push({ row: i + 1, message: "Unexpected error processing row" });
+    }
+  }
+
+  await prisma.auditLog.create({
+    data: {
+      action: "IMPORT_TOURNAMENTS",
+      entity: "Tournament",
+      entityId: "bulk",
+      before: {},
+      after: { created, updated, errorCount: errors.length },
+      adminId,
+    },
+    select: auditLogSelector,
+  });
+
+  return { message: "Tournaments import completed", created, updated, errors };
 }
 
 async function sendLockOverrideAlerts(

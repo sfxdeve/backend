@@ -5,6 +5,7 @@ import {
   fantasyTeamSelector,
   gameweekStandingSelector,
   h2hMatchupSelector,
+  leagueMembershipSelector,
   leagueSelector,
   tournamentSelector,
 } from "../../prisma/selectors.js";
@@ -14,19 +15,32 @@ import type {
   GameweekParamsType,
 } from "./schema.js";
 
-export async function getSeasonStandings({
-  id: leagueId,
-  page,
-  limit,
-}: LeagueParamsType & StandingsQueryType) {
+async function assertLeagueAccess(leagueId: string, userId: string) {
   const league = await prisma.league.findUnique({
     where: { id: leagueId },
     select: leagueSelector,
   });
 
-  if (!league) {
-    throw new AppError("NOT_FOUND", "League not found");
+  if (!league) throw new AppError("NOT_FOUND", "League not found");
+
+  if (league.type === "PRIVATE") {
+    const membership = await prisma.leagueMembership.findUnique({
+      where: { userId_leagueId: { userId, leagueId } },
+      select: leagueMembershipSelector,
+    });
+    if (!membership) throw new AppError("NOT_FOUND", "League not found");
   }
+
+  return league;
+}
+
+export async function getSeasonStandings({
+  id: leagueId,
+  userId,
+  page,
+  limit,
+}: LeagueParamsType & StandingsQueryType & { userId: string }) {
+  const league = await assertLeagueAccess(leagueId, userId);
 
   const options = paginationOptions({ page, limit });
   const total = await prisma.fantasyTeam.count({ where: { leagueId } });
@@ -94,18 +108,12 @@ export async function getSeasonStandings({
 
 export async function getGameweekStandings({
   id: leagueId,
+  userId,
   tournamentId,
   page,
   limit,
-}: GameweekParamsType & StandingsQueryType) {
-  const league = await prisma.league.findUnique({
-    where: { id: leagueId },
-    select: leagueSelector,
-  });
-
-  if (!league) {
-    throw new AppError("NOT_FOUND", "League not found");
-  }
+}: GameweekParamsType & StandingsQueryType & { userId: string }) {
+  const league = await assertLeagueAccess(leagueId, userId);
 
   const options = paginationOptions({ page, limit });
 
@@ -131,15 +139,11 @@ export async function getGameweekStandings({
   };
 }
 
-export async function getH2HSchedule({ id: leagueId }: LeagueParamsType) {
-  const league = await prisma.league.findUnique({
-    where: { id: leagueId },
-    select: leagueSelector,
-  });
-
-  if (!league) {
-    throw new AppError("NOT_FOUND", "League not found");
-  }
+export async function getH2HSchedule({
+  id: leagueId,
+  userId,
+}: LeagueParamsType & { userId: string }) {
+  const league = await assertLeagueAccess(leagueId, userId);
 
   if (league.rankingMode !== "HEAD_TO_HEAD") {
     throw new AppError(

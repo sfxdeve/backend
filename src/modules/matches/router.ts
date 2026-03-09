@@ -1,6 +1,8 @@
 import { Router, type Request, type Response } from "express";
 import { validateRequest } from "../../middlewares/validate-request.js";
 import { requireAuth, requireAdmin } from "../../middlewares/auth.js";
+import { importUpload } from "../../middlewares/upload.js";
+import { AppError } from "../../lib/errors.js";
 import * as service from "./service.js";
 import {
   MatchQuerySchema,
@@ -15,8 +17,6 @@ import {
   type UpdateMatchBodyType,
   MatchResultBodySchema,
   type MatchResultBodyType,
-  ImportMatchesBodySchema,
-  type ImportMatchesBodyType,
 } from "./schema.js";
 
 const router = Router();
@@ -94,11 +94,18 @@ router.post(
 router.post(
   "/matches/import",
   requireAdmin,
-  validateRequest({ body: ImportMatchesBodySchema }),
+  importUpload.single("file"),
   async (req: Request, res: Response) => {
+    if (!req.file) {
+      throw new AppError(
+        "BAD_REQUEST",
+        "A CSV or Excel file is required (field name: file)",
+      );
+    }
+
     const result = await service.importMatches({
       adminId: req.auth!.userId,
-      ...(req.validated!.body as ImportMatchesBodyType),
+      buffer: req.file.buffer,
     });
 
     res.status(200).json(result);

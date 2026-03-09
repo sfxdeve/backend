@@ -21,6 +21,7 @@ router.get(
     const result = await service.getSeasonStandings({
       ...(req.validated!.params as LeagueParamsType),
       ...(req.validated!.query as StandingsQueryType),
+      userId: req.auth!.userId,
     });
 
     res.status(200).json(result);
@@ -38,6 +39,7 @@ router.get(
     const result = await service.getGameweekStandings({
       ...(req.validated!.params as GameweekParamsType),
       ...(req.validated!.query as StandingsQueryType),
+      userId: req.auth!.userId,
     });
 
     res.status(200).json(result);
@@ -49,9 +51,10 @@ router.get(
   requireAuth,
   validateRequest({ params: LeagueParamsSchema }),
   async (req: Request, res: Response) => {
-    const result = await service.getH2HSchedule(
-      req.validated!.params as LeagueParamsType,
-    );
+    const result = await service.getH2HSchedule({
+      ...(req.validated!.params as LeagueParamsType),
+      userId: req.auth!.userId,
+    });
 
     res.status(200).json(result);
   },

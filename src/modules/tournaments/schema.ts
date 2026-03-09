@@ -66,3 +66,11 @@ export const LineupLockOverrideBodySchema = z.object({
 export type LineupLockOverrideBodyType = z.infer<
   typeof LineupLockOverrideBodySchema
 >;
+
+export const TournamentImportRowSchema = z.object({
+  championshipId: z.uuid("Championship ID must be a valid UUID"),
+  startDate: z.coerce.date("Start date must be a date"),
+  endDate: z.coerce.date("End date must be a date"),
+  lineupLockAt: z.coerce.date("Lineup lock time must be a date").optional(),
+});
+export type TournamentImportRowType = z.infer<typeof TournamentImportRowSchema>;
