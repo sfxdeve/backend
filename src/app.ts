@@ -16,6 +16,12 @@ import authRouter from "./modules/auth/router.js";
 import championshipsRouter from "./modules/championships/router.js";
 import creditsRouter from "./modules/credits/router.js";
 import auditLogsRouter from "./modules/audit-logs/router.js";
+import athletesRouter from "./modules/athletes/router.js";
+import tournamentsRouter from "./modules/tournaments/router.js";
+import leaguesRouter from "./modules/leagues/router.js";
+import teamsRouter from "./modules/teams/router.js";
+import matchesRouter from "./modules/matches/router.js";
+import standingsRouter from "./modules/standings/router.js";
 
 export async function bootstrap(): Promise<{
   app: Express;
@@ -84,6 +90,12 @@ export async function bootstrap(): Promise<{
   app.use(`${prefix}/championships`, championshipsRouter);
   app.use(`${prefix}/credits`, creditsRouter);
   app.use(`${prefix}/admin`, auditLogsRouter);
+  app.use(`${prefix}`, athletesRouter);
+  app.use(`${prefix}`, tournamentsRouter);
+  app.use(`${prefix}/leagues`, leaguesRouter);
+  app.use(`${prefix}/leagues`, teamsRouter);
+  app.use(`${prefix}/leagues`, standingsRouter);
+  app.use(`${prefix}`, matchesRouter);
 
   app.use(notFoundHandler);
 
