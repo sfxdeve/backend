@@ -1900,6 +1900,37 @@
           ]
         },
         {
+          "name": "List Admin Credit Packs",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}{{apiPrefix}}/credits/admin/packs",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let res = {};",
+                  "try { res = pm.response.json(); } catch (error) {}",
+                  "const pack = res.pack || (Array.isArray(res.items) ? res.items[0] : null);",
+                  "if (pack && pack.id) pm.environment.set('creditPackId', String(pack.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Toggle Credit Pack",
           "request": {
             "method": "PATCH",
@@ -1971,7 +2002,55 @@
           "name": "Audit Logs",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}{{apiPrefix}}/admin?entity={{auditEntity}}&from={{auditFrom}}&to={{auditTo}}&page={{page}}&limit={{limit}}",
+            "url": "{{baseUrl}}{{apiPrefix}}/admin/audit-logs?entity={{auditEntity}}&from={{auditFrom}}&to={{auditTo}}&page={{page}}&limit={{limit}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Admin Leagues",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}{{apiPrefix}}/admin/leagues?page={{page}}&limit={{limit}}&type={{leagueType}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let res = {};",
+                  "try { res = pm.response.json(); } catch (error) {}",
+                  "const league = Array.isArray(res.items) ? res.items[0] : null;",
+                  "if (league && league.id) pm.environment.set('leagueId', String(league.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Admin Transactions",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}{{apiPrefix}}/admin/transactions?page={{page}}&limit={{limit}}",
             "auth": {
               "type": "bearer",
               "bearer": [

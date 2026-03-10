@@ -42,6 +42,15 @@ export async function listPacks() {
   return { message: "Credit packs fetched successfully", items };
 }
 
+export async function listAdminPacks() {
+  const items = await prisma.creditPack.findMany({
+    orderBy: [{ isActive: "desc" }, { credits: "asc" }],
+    select: creditPackSelector,
+  });
+
+  return { message: "Admin credit packs fetched successfully", items };
+}
+
 export async function createCheckout({
   userId,
   ...body
@@ -290,6 +299,26 @@ export async function getWallet({
     },
     transactions,
     meta: paginationMeta(total, { page, limit }),
+  };
+}
+
+export async function listTransactions({ page, limit }: WalletQueryType) {
+  const options = paginationOptions({ page, limit });
+
+  const [items, total] = await Promise.all([
+    prisma.creditTransaction.findMany({
+      orderBy: { createdAt: "desc" },
+      skip: options.skip,
+      take: options.take,
+      select: creditTransactionSelector,
+    }),
+    prisma.creditTransaction.count(),
+  ]);
+
+  return {
+    message: "Credit transactions fetched successfully",
+    meta: paginationMeta(total, { page, limit }),
+    items,
   };
 }
 

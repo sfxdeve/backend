@@ -3,6 +3,9 @@ import { paginationSchema } from "../../lib/pagination.js";
 
 export const LeagueQuerySchema = z.object({
   ...paginationSchema.shape,
+  type: z
+    .enum(["PUBLIC", "PRIVATE"], "Type must be one of PUBLIC, PRIVATE")
+    .optional(),
 });
 export type LeagueQueryType = z.infer<typeof LeagueQuerySchema>;
 

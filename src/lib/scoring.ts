@@ -13,7 +13,7 @@ import {
   tournamentSelector,
   userSelector,
 } from "../prisma/selectors.js";
-import { sendLineupReminder, sendTournamentSummary } from "./notifications.js";
+import { sendTournamentSummary } from "./notifications.js";
 import { logger } from "./logger.js";
 
 // ─── Point Calculation Helpers ────────────────────────────────────────────────
@@ -487,7 +487,6 @@ async function checkAndCloseLeagues(championshipId: string): Promise<void> {
 
 /**
  * Called when a tournament transitions to LOCKED.
- * - Sends a reminder email to all users who have not yet submitted a lineup.
  * - Sets lockedAt = now() on all submitted lineups for teams in this championship's leagues.
  * - Creates fallback lineups (copied from most recent prior tournament) for teams with no lineup.
  *   Teams that have never submitted any lineup score 0 for this tournament.
@@ -529,11 +528,6 @@ export async function lockLineups(tournamentId: string): Promise<void> {
   });
 
   const now = new Date();
-  const lockAt = tournament.lineupLockAt ?? now;
-
-  // ── Collect teams with no lineup yet — used for reminder emails
-  const reminderTargets: { email: string; name: string; leagueName: string }[] =
-    [];
 
   for (const league of leagues) {
     const teams = await prisma.fantasyTeam.findMany({
@@ -560,13 +554,6 @@ export async function lockLineups(tournamentId: string): Promise<void> {
           select: lineupSelector,
         });
       } else {
-        // No lineup submitted — collect for reminder email
-        reminderTargets.push({
-          email: team.user.email,
-          name: team.user.name,
-          leagueName: league.name,
-        });
-
         // Look for the most recent prior lineup to copy
         const priorLineup = await prisma.lineup.findFirst({
           where: {
@@ -612,15 +599,6 @@ export async function lockLineups(tournamentId: string): Promise<void> {
         // If no prior lineup exists: team scores 0 — no lineup record created
       }
     }
-  }
-
-  // ── Send reminder emails (fire-and-forget)
-  if (reminderTargets.length > 0) {
-    Promise.allSettled(
-      reminderTargets.map((t) =>
-        sendLineupReminder(t.email, t.name, t.leagueName, lockAt),
-      ),
-    ).catch((err) => logger.error({ err }, "lineup reminder batch failed"));
   }
 
   // ── Auto-substitution: only meaningful when the entry set is non-empty

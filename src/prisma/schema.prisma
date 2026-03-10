@@ -110,6 +110,7 @@ model Tournament {
   id           String           @id @default(uuid())
   status       TournamentStatus @default(UPCOMING)
   lineupLockAt DateTime?
+  lineupReminderSentAt DateTime?
   startDate    DateTime
   endDate      DateTime
   createdAt    DateTime         @default(now())

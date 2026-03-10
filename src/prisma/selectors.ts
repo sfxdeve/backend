@@ -59,6 +59,7 @@ export const otpSelector = {
 
 export const auditLogSelector = {
   id: true,
+  adminId: true,
   action: true,
   entity: true,
   entityId: true,
@@ -82,8 +83,10 @@ export const championshipSelector = {
 
 export const tournamentSelector = {
   id: true,
+  championshipId: true,
   status: true,
   lineupLockAt: true,
+  lineupReminderSentAt: true,
   startDate: true,
   endDate: true,
   createdAt: true,
@@ -97,12 +100,14 @@ export const athleteSelector = {
   gender: true,
   rank: true,
   cost: true,
+  championshipId: true,
   createdAt: true,
   updatedAt: true,
 } satisfies AthleteSelect;
 
 export const matchSelector = {
   id: true,
+  tournamentId: true,
   round: true,
   status: true,
   scheduledAt: true,
@@ -113,6 +118,10 @@ export const matchSelector = {
   set3A: true,
   set3B: true,
   winnerSide: true,
+  sideAAthlete1Id: true,
+  sideAAthlete2Id: true,
+  sideBAthlete1Id: true,
+  sideBAthlete2Id: true,
   createdAt: true,
   updatedAt: true,
 } satisfies MatchSelect;
@@ -145,6 +154,8 @@ export const leagueSelector = {
   prize3rd: true,
   maxMembers: true,
   isMarketEnabled: true,
+  championshipId: true,
+  createdById: true,
   createdAt: true,
   updatedAt: true,
 } satisfies LeagueSelect;
@@ -229,6 +240,7 @@ export const creditPackSelector = {
 
 export const creditTransactionSelector = {
   id: true,
+  walletId: true,
   type: true,
   source: true,
   amount: true,

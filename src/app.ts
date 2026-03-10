@@ -16,6 +16,7 @@ import authRouter from "./modules/auth/router.js";
 import championshipsRouter from "./modules/championships/router.js";
 import creditsRouter from "./modules/credits/router.js";
 import auditLogsRouter from "./modules/audit-logs/router.js";
+import adminRouter from "./modules/admin/router.js";
 import usersRouter from "./modules/users/router.js";
 import athletesRouter from "./modules/athletes/router.js";
 import tournamentsRouter from "./modules/tournaments/router.js";
@@ -91,6 +92,7 @@ export async function bootstrap(): Promise<{
   app.use(`${prefix}/championships`, championshipsRouter);
   app.use(`${prefix}/credits`, creditsRouter);
   app.use(`${prefix}/admin`, auditLogsRouter);
+  app.use(`${prefix}/admin`, adminRouter);
   app.use(`${prefix}/admin`, usersRouter);
   app.use(`${prefix}`, athletesRouter);
   app.use(`${prefix}`, tournamentsRouter);

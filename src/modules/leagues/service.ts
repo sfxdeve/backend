@@ -56,20 +56,46 @@ export async function listMine({
 
 export async function list({ page, limit }: LeagueQueryType) {
   const options = paginationOptions({ page, limit });
+  const where = {
+    type: "PUBLIC" as const,
+    isOpen: true,
+  };
 
   const [items, total] = await Promise.all([
     prisma.league.findMany({
-      where: { type: "PUBLIC", isOpen: true },
+      where,
       select: leagueSelector,
       orderBy: { createdAt: "desc" },
       skip: options.skip,
       take: options.take,
     }),
-    prisma.league.count({ where: { type: "PUBLIC", isOpen: true } }),
+    prisma.league.count({ where }),
   ]);
 
   return {
     message: "Leagues fetched successfully",
+    meta: paginationMeta(total, { page, limit }),
+    items,
+  };
+}
+
+export async function listAdmin({ page, limit, type }: LeagueQueryType) {
+  const options = paginationOptions({ page, limit });
+  const where = type ? { type } : {};
+
+  const [items, total] = await Promise.all([
+    prisma.league.findMany({
+      where,
+      select: leagueSelector,
+      orderBy: { createdAt: "desc" },
+      skip: options.skip,
+      take: options.take,
+    }),
+    prisma.league.count({ where }),
+  ]);
+
+  return {
+    message: "Admin leagues fetched successfully",
     meta: paginationMeta(total, { page, limit }),
     items,
   };

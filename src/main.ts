@@ -1,9 +1,11 @@
 import { env } from "./lib/env.js";
 import { logger } from "./lib/logger.js";
 import { bootstrap } from "./app.js";
+import { startLineupReminderScheduler } from "./lib/lineup-reminders.js";
 
 async function run(): Promise<void> {
   const { app, shutdown } = await bootstrap();
+  const stopLineupReminderScheduler = startLineupReminderScheduler();
 
   const server = app.listen(env.PORT, () => {
     logger.info({ port: env.PORT }, "FantaBeach backend started");
@@ -15,6 +17,7 @@ async function run(): Promise<void> {
     const timeout = setTimeout(async () => {
       logger.error("Forced shutdown after timeout");
 
+      stopLineupReminderScheduler();
       await shutdown();
 
       process.exit(1);
@@ -23,6 +26,7 @@ async function run(): Promise<void> {
     server.close(async () => {
       clearTimeout(timeout);
 
+      stopLineupReminderScheduler();
       await shutdown();
 
       process.exit(0);

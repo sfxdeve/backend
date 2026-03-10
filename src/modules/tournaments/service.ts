@@ -12,6 +12,7 @@ import { runTournamentCompletion, lockLineups } from "../../lib/scoring.js";
 import { sendLockOverrideAlert } from "../../lib/notifications.js";
 import { logger } from "../../lib/logger.js";
 import { parseImportFile } from "../../lib/parse-import.js";
+import { shouldResetLineupReminder } from "../../lib/lineup-reminders.js";
 import { TournamentImportRowSchema } from "./schema.js";
 import type {
   TournamentQueryType,
@@ -119,12 +120,27 @@ export async function update({
     throw new AppError("NOT_FOUND", "Tournament not found");
   }
 
+  const nextStatus = data.status ?? existing.status;
+  const hasLineupLockAt = Object.prototype.hasOwnProperty.call(
+    data,
+    "lineupLockAt",
+  );
+  const nextLineupLockAt = hasLineupLockAt
+    ? data.lineupLockAt
+    : existing.lineupLockAt;
+  const tournamentUpdateData = {
+    ...data,
+    ...(hasLineupLockAt &&
+    shouldResetLineupReminder(nextStatus, nextLineupLockAt)
+      ? { lineupReminderSentAt: null }
+      : {}),
+  };
+
   const tournament = await prisma.tournament.update({
     where: { id },
-    data,
+    data: tournamentUpdateData,
     select: {
       ...tournamentSelector,
-      championshipId: true,
     },
   });
 
@@ -180,10 +196,14 @@ export async function overrideLineupLock({
 
   const tournament = await prisma.tournament.update({
     where: { id },
-    data: { lineupLockAt },
+    data: {
+      lineupLockAt,
+      ...(shouldResetLineupReminder(existing.status, lineupLockAt)
+        ? { lineupReminderSentAt: null }
+        : {}),
+    },
     select: {
       ...tournamentSelector,
-      championshipId: true,
     },
   });
 

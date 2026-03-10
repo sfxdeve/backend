@@ -88,6 +88,16 @@ router.post(
   },
 );
 
+router.get(
+  "/admin/packs",
+  requireAdmin,
+  async (_req: Request, res: Response) => {
+    const result = await service.listAdminPacks();
+
+    res.status(200).json(result);
+  },
+);
+
 router.patch(
   "/admin/packs/:id/toggle",
   requireAdmin,

@@ -103,6 +103,7 @@ const ENV_VARS = [
   { key: "leagueBudgetPerTeam", value: "300", type: "default" },
   { key: "leagueEntryFeeCredits", value: "0", type: "default" },
   { key: "leagueMaxMembers", value: "8", type: "default" },
+  { key: "leagueType", value: "PUBLIC", type: "default" },
   { key: "leagueJoinCode", value: "", type: "default" },
   { key: "fantasyTeamName", value: "Sandy Aces", type: "default" },
   { key: "creditPackId", value: "", type: "default" },
@@ -768,6 +769,13 @@ const collection = {
           event: captureCreditPackEvent,
         }),
         request({
+          name: "List Admin Credit Packs",
+          method: "GET",
+          url: "{{baseUrl}}{{apiPrefix}}/credits/admin/packs",
+          auth: bearerAuth("adminAccessToken"),
+          event: captureCreditPackEvent,
+        }),
+        request({
           name: "Toggle Credit Pack",
           method: "PATCH",
           url: "{{baseUrl}}{{apiPrefix}}/credits/admin/packs/{{creditPackId}}/toggle",
@@ -790,7 +798,25 @@ const collection = {
         request({
           name: "Audit Logs",
           method: "GET",
-          url: "{{baseUrl}}{{apiPrefix}}/admin?entity={{auditEntity}}&from={{auditFrom}}&to={{auditTo}}&page={{page}}&limit={{limit}}",
+          url: "{{baseUrl}}{{apiPrefix}}/admin/audit-logs?entity={{auditEntity}}&from={{auditFrom}}&to={{auditTo}}&page={{page}}&limit={{limit}}",
+          auth: bearerAuth("adminAccessToken"),
+        }),
+        request({
+          name: "List Admin Leagues",
+          method: "GET",
+          url: "{{baseUrl}}{{apiPrefix}}/admin/leagues?page={{page}}&limit={{limit}}&type={{leagueType}}",
+          auth: bearerAuth("adminAccessToken"),
+          event: eventScript([
+            "let res = {};",
+            "try { res = pm.response.json(); } catch (error) {}",
+            "const league = Array.isArray(res.items) ? res.items[0] : null;",
+            "if (league && league.id) pm.environment.set('leagueId', String(league.id));",
+          ]),
+        }),
+        request({
+          name: "List Admin Transactions",
+          method: "GET",
+          url: "{{baseUrl}}{{apiPrefix}}/admin/transactions?page={{page}}&limit={{limit}}",
           auth: bearerAuth("adminAccessToken"),
         }),
         request({
