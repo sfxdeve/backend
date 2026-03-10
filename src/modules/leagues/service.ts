@@ -137,6 +137,9 @@ export async function create({
   if (data.type === "PUBLIC" && !isAdmin) {
     throw new AppError("FORBIDDEN", "Only admins can create public leagues");
   }
+  if (data.type === "PRIVATE" && isAdmin) {
+    throw new AppError("FORBIDDEN", "Admins can only create public leagues");
+  }
 
   // PUBLIC leagues must use OVERALL
   const rankingMode =
