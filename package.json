@@ -4,20 +4,19 @@
   "type": "module",
   "scripts": {
     "prebuild": "npm run db:generate",
-    "build": "dotenvx run -f .env -- tsc",
+    "build": "tsc",
     "postbuild": "npm run pm:generate",
-    "start": "dotenvx run -f .env -- node dist/main.js",
+    "start": "node dist/main.js",
     "predev": "npm run db:generate",
     "dev": "dotenvx run -f .env -- tsx watch src/main.ts",
     "pretypecheck": "npm run db:generate",
     "typecheck": "tsc --noEmit",
     "pm:generate": "node scripts/generate-postman.js",
-    "db:generate": "dotenvx run -f .env -- prisma generate",
-    "db:push": "dotenvx run -f .env -- prisma db push",
-    "db:migrate": "dotenvx run -f .env -- prisma migrate dev",
-    "db:studio": "dotenvx run -f .env -- prisma studio",
-    "db:seed": "dotenvx run -f .env -- prisma db seed",
-    "db:seed:real-world": "dotenvx run -f .env -- tsx scripts/seed-real-world.ts"
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "db:seed": "prisma db seed"
   },
   "dependencies": {
     "@dotenvx/dotenvx": "^1.52.0",
