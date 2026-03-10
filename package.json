@@ -16,7 +16,8 @@
     "db:push": "dotenvx run -f .env -- prisma db push",
     "db:migrate": "dotenvx run -f .env -- prisma migrate dev",
     "db:studio": "dotenvx run -f .env -- prisma studio",
-    "db:seed": "dotenvx run -f .env -- prisma db seed"
+    "db:seed": "dotenvx run -f .env -- prisma db seed",
+    "db:seed:real-world": "dotenvx run -f .env -- tsx scripts/seed-real-world.ts"
   },
   "dependencies": {
     "@dotenvx/dotenvx": "^1.52.0",
