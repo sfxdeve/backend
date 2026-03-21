@@ -57,7 +57,7 @@ export async function register(body: RegisterBodyType) {
 
   const code = await createOtp(user.id, OtpPurpose.VERIFY_EMAIL);
 
-  await sendVerificationOtp(user.email, code);
+  sendVerificationOtp(user.email, code);
 
   return {
     message:
@@ -121,7 +121,7 @@ export async function login(body: LoginBodyType) {
   if (!existingUser.isVerified) {
     const code = await createOtp(existingUser.id, OtpPurpose.VERIFY_EMAIL);
 
-    sendVerificationOtp(existingUser.email, code).catch(() => {});
+    sendVerificationOtp(existingUser.email, code);
 
     throw new AppError(
       "FORBIDDEN",
@@ -205,7 +205,7 @@ export async function forgotPassword(body: ForgotPasswordBodyType) {
 
   const code = await createOtp(existingUser.id, OtpPurpose.RESET_PASSWORD);
 
-  await sendResetPasswordOtp(existingUser.email, code);
+  sendResetPasswordOtp(existingUser.email, code);
 
   return { message: "If that email exists, a reset code has been sent" };
 }

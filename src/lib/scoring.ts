@@ -13,7 +13,6 @@ import {
   tournamentSelector,
   userSelector,
 } from "../prisma/selectors.js";
-import { sendTournamentSummary } from "./notifications.js";
 import { logger } from "./logger.js";
 
 // ─── Point Calculation Helpers ────────────────────────────────────────────────
@@ -724,49 +723,4 @@ export async function runTournamentCompletion(
   await scoreLineups(tournamentId, athletePoints);
   await updateStandings(tournamentId);
   await checkAndCloseLeagues(tournament.championship.id);
-
-  // ── Post-tournament summary emails (fire-and-forget)
-  sendTournamentSummaryEmails(tournamentId, tournament.startDate).catch((err) =>
-    logger.error({ err }, "post-tournament summary emails failed"),
-  );
-}
-
-async function sendTournamentSummaryEmails(
-  tournamentId: string,
-  tournamentStartDate: Date,
-): Promise<void> {
-  const tournamentName = `Tournament ${tournamentStartDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`;
-
-  const leagues = await prisma.league.findMany({
-    where: { championship: { tournaments: { some: { id: tournamentId } } } },
-    select: leagueSelector,
-  });
-
-  for (const league of leagues) {
-    const standings = await prisma.gameweekStanding.findMany({
-      where: { leagueId: league.id, tournamentId },
-      select: {
-        ...gameweekStandingSelector,
-        fantasyTeam: {
-          select: {
-            ...fantasyTeamSelector,
-            user: { select: userSelector },
-          },
-        },
-      },
-    });
-
-    const tasks = standings.map((s) =>
-      sendTournamentSummary(
-        s.fantasyTeam.user.email,
-        s.fantasyTeam.user.name,
-        league.name,
-        tournamentName,
-        s.gameweekPoints,
-        s.rank,
-      ),
-    );
-
-    await Promise.allSettled(tasks);
-  }
 }
