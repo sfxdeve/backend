@@ -119,9 +119,13 @@ export async function login(body: LoginBodyType) {
   }
 
   if (!existingUser.isVerified) {
+    const code = await createOtp(existingUser.id, OtpPurpose.VERIFY_EMAIL);
+
+    await sendVerificationOtp(existingUser.email, code);
+
     throw new AppError(
       "FORBIDDEN",
-      "Please verify your email before logging in",
+      "Please verify your email before logging in. Check your email for a new verification code.",
     );
   }
 
