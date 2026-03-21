@@ -121,7 +121,7 @@ export async function login(body: LoginBodyType) {
   if (!existingUser.isVerified) {
     const code = await createOtp(existingUser.id, OtpPurpose.VERIFY_EMAIL);
 
-    await sendVerificationOtp(existingUser.email, code);
+    sendVerificationOtp(existingUser.email, code).catch(() => {});
 
     throw new AppError(
       "FORBIDDEN",
